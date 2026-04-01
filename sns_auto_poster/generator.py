@@ -11,9 +11,25 @@ MODEL = "gemini-2.5-flash"
 _CALL_INTERVAL = 13  # seconds between API calls
 
 
-def _generate(prompt):
-    """レート制限を考慮してAPIを呼び出す"""
+def _generate(prompt, max_retries=3):
+    """レート制限を考慮してAPIを呼び出す（リトライ付き）"""
     time.sleep(_CALL_INTERVAL)
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(model=MODEL, contents=prompt)
+            return response.text.strip()
+        except Exception as e:
+            err_str = str(e)
+            if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                # retry_delay をエラーメッセージから抽出
+                import re
+                m = re.search(r"retry in (\d+)", err_str)
+                wait = int(m.group(1)) + 5 if m else 65
+                print(f"  レート制限 (429)、{wait}秒待機後リトライ ({attempt+1}/{max_retries})")
+                time.sleep(wait)
+            else:
+                raise
+    # 最終試行
     response = client.models.generate_content(model=MODEL, contents=prompt)
     return response.text.strip()
 
