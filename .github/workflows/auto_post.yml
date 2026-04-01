@@ -1,6 +1,6 @@
 name: SNS Auto Post
 
-on:
+"on":
   schedule:
     - cron: '0 23 * * *'   # UTC 23:00 = JST 08:00 (朝投稿)
     - cron: '0 4 * * *'    # UTC 04:00 = JST 13:00 (昼投稿)
