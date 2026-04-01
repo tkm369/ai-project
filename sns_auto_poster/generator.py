@@ -4,6 +4,7 @@ from datetime import datetime
 import pytz
 from google import genai
 from config import GEMINI_API_KEY, AFFILIATE_LINK, AFFILIATE_TEXT
+from logger import get_top_posts
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 MODEL = "gemini-2.5-flash"
@@ -47,14 +48,23 @@ def get_time_theme():
         return "夜", "明日の恋愛運・夜の浄化メッセージ・魂が求めているもの"
 
 
-def generate_and_score_posts(platform="x"):
+def generate_and_score_posts(platform="x", top_posts=None):
     """3つの投稿案を生成してスコアリングも一回のAPI呼び出しで行う"""
     _, theme = get_time_theme()
     max_chars = 240 if platform == "x" else 450
 
+    top_posts_section = ""
+    if top_posts:
+        lines = ["【参考：過去に高エンゲージメントを記録した投稿パターン】"]
+        for p in top_posts:
+            rate = p["metrics"].get("engagement_rate", 0)
+            lines.append(f'{p["content"][:100]}... (engagement_rate: {rate:.2%})')
+        lines.append("これらの投稿の特徴（書き出し・構成・トーン）を参考にしてください。")
+        top_posts_section = "\n" + "\n".join(lines) + "\n"
+
     prompt = f"""あなたはフォロワーを惹きつける人気SNS占い師です。
 「{theme}」というテーマで、{platform}用の投稿を3案作成し、各案のエンゲージメントスコア(0-100)を付けてください。
-
+{top_posts_section}
 【投稿必須条件】
 - 占い・スピリチュアル・恋愛運に関する内容
 - 1行目で読者がスクロールを止めるような「フック」を入れる
@@ -111,7 +121,9 @@ def improve_post(post, platform="x"):
 def get_best_post(platform="x"):
     """生成→スコアリング→改善の全フローを実行（API呼び出し2回）"""
     print(f"  [{platform}] 投稿案を生成・スコアリング中...")
-    best_post = generate_and_score_posts(platform)
+
+    top_posts = get_top_posts(n=3)
+    best_post = generate_and_score_posts(platform, top_posts=top_posts)
 
     print(f"  [{platform}] 投稿を改善中...")
     final_post = improve_post(best_post, platform)

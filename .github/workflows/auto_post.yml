@@ -1,5 +1,8 @@
 name: SNS Auto Post
 
+permissions:
+  contents: write
+
 "on":
   schedule:
     - cron: '0 23 * * *'   # UTC 23:00 = JST 08:00 (朝投稿)
@@ -34,3 +37,11 @@ jobs:
           THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
           AFFILIATE_LINK: ${{ secrets.AFFILIATE_LINK }}
         run: cd sns_auto_poster && python main.py
+
+      - name: 投稿ログをコミット
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sns_auto_poster/posts_log.json
+          git diff --staged --quiet || git commit -m "chore: 投稿ログ更新 [skip ci]"
+          git push

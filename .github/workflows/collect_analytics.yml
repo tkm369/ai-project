@@ -1,0 +1,38 @@
+name: Collect Analytics
+
+permissions:
+  contents: write
+
+"on":
+  schedule:
+    - cron: '0 15 * * *'   # UTC 15:00 = JST 00:00 (深夜に昨日分を収集)
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Python 3.11 セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 依存ライブラリをインストール
+        run: pip install -r sns_auto_poster/requirements.txt
+
+      - name: 実績データを収集
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+        run: cd sns_auto_poster && python collect_analytics.py
+
+      - name: 実績ログをコミット
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sns_auto_poster/posts_log.json
+          git diff --staged --quiet || git commit -m "chore: 実績データ更新 [skip ci]"
+          git push

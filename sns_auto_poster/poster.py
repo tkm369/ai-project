@@ -11,7 +11,7 @@ def post_to_x(text):
     """Xに投稿する"""
     if not all([X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET]):
         print("  [X] APIキーが未設定のためスキップ")
-        return False
+        return None
     try:
         client = tweepy.Client(
             consumer_key=X_API_KEY,
@@ -20,19 +20,19 @@ def post_to_x(text):
             access_token_secret=X_ACCESS_TOKEN_SECRET,
         )
         response = client.create_tweet(text=text)
-        tweet_id = response.data["id"]
+        tweet_id = str(response.data["id"])
         print(f"  [X] 投稿成功 → https://x.com/i/web/status/{tweet_id}")
-        return True
+        return tweet_id
     except Exception as e:
         print(f"  [X] 投稿失敗: {e}")
-        return False
+        return None
 
 
 def post_to_threads(text):
     """Threadsに投稿する"""
     if not all([THREADS_ACCESS_TOKEN, THREADS_USER_ID]):
         print("  [Threads] APIキーが未設定のためスキップ")
-        return False
+        return None
     try:
         # Step1: メディアコンテナ作成
         container_url = f"https://graph.threads.net/v1.0/{THREADS_USER_ID}/threads"
@@ -58,13 +58,13 @@ def post_to_threads(text):
         })
 
         if publish_res.status_code == 200:
-            post_id = publish_res.json().get("id", "")
+            post_id = str(publish_res.json().get("id", ""))
             print(f"  [Threads] 投稿成功 (ID: {post_id})")
-            return True
+            return post_id if post_id else None
         else:
             print(f"  [Threads] 公開失敗: {publish_res.text}")
-            return False
+            return None
 
     except Exception as e:
         print(f"  [Threads] 投稿失敗: {e}")
-        return False
+        return None
