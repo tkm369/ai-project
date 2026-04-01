@@ -5,7 +5,7 @@ from google import genai
 from config import GEMINI_API_KEY, AFFILIATE_LINK, AFFILIATE_TEXT
 
 client = genai.Client(api_key=GEMINI_API_KEY)
-MODEL = "gemini-2.0-flash-lite"
+MODEL = "gemini-2.5-flash"
 
 
 def get_time_theme():
