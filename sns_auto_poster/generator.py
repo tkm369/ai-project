@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import datetime
 import pytz
 from google import genai
@@ -6,6 +7,15 @@ from config import GEMINI_API_KEY, AFFILIATE_LINK, AFFILIATE_TEXT
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 MODEL = "gemini-2.5-flash"
+# Free tier: 5 RPM → 12秒以上の間隔を空ける
+_CALL_INTERVAL = 13  # seconds between API calls
+
+
+def _generate(prompt):
+    """レート制限を考慮してAPIを呼び出す"""
+    time.sleep(_CALL_INTERVAL)
+    response = client.models.generate_content(model=MODEL, contents=prompt)
+    return response.text.strip()
 
 
 def get_time_theme():
@@ -21,15 +31,15 @@ def get_time_theme():
         return "夜", "明日の恋愛運・夜の浄化メッセージ・魂が求めているもの"
 
 
-def generate_posts(platform="x"):
-    """3つの投稿案を生成"""
+def generate_and_score_posts(platform="x"):
+    """3つの投稿案を生成してスコアリングも一回のAPI呼び出しで行う"""
     _, theme = get_time_theme()
     max_chars = 240 if platform == "x" else 450
 
     prompt = f"""あなたはフォロワーを惹きつける人気SNS占い師です。
-「{theme}」というテーマで、{platform}用の投稿を3案作成してください。
+「{theme}」というテーマで、{platform}用の投稿を3案作成し、各案のエンゲージメントスコア(0-100)を付けてください。
 
-【必須条件】
+【投稿必須条件】
 - 占い・スピリチュアル・恋愛運に関する内容
 - 1行目で読者がスクロールを止めるような「フック」を入れる
 - 読者が「自分のことだ」と感じる共感ワードを使う
@@ -38,39 +48,27 @@ def generate_posts(platform="x"):
 - 絵文字を効果的に使う（多すぎない）
 - ハッシュタグを末尾に4〜6個（#占い #恋愛運 #スピリチュアル #開運 など）
 
-【投稿3案を「---」で区切って出力してください】"""
-
-    response = client.models.generate_content(model=MODEL, contents=prompt)
-    posts = response.text.strip().split("---")
-    posts = [p.strip() for p in posts if len(p.strip()) > 20]
-    return posts[:3]
-
-
-def score_post(post):
-    """エンゲージメントスコアを0〜100で評価"""
-    prompt = f"""以下のSNS占い投稿のエンゲージメント予測スコアを評価してください。
-
-【評価基準】
-- 感情的共鳴度（読者が「わかる」と感じるか）
-- 拡散されやすさ（保存・シェアしたくなるか）
-- コメント誘発度（返信したくなるか）
-- アフィリンクへの誘導の自然さ
-
-【投稿】
-{post}
-
 以下のJSON形式のみで返してください（説明不要）:
-{{"score": 数字, "reason": "一言"}}"""
+[
+  {{"score": 数字, "post": "投稿内容"}},
+  {{"score": 数字, "post": "投稿内容"}},
+  {{"score": 数字, "post": "投稿内容"}}
+]"""
 
-    response = client.models.generate_content(model=MODEL, contents=prompt)
+    text = _generate(prompt)
     try:
-        text = response.text
-        start = text.find("{")
-        end = text.rfind("}") + 1
-        result = json.loads(text[start:end])
-        return result.get("score", 50)
+        start = text.find("[")
+        end = text.rfind("]") + 1
+        results = json.loads(text[start:end])
+        results.sort(key=lambda x: x.get("score", 0), reverse=True)
+        best_score = results[0].get("score", 50)
+        best_post = results[0].get("post", "")
+        print(f"  [{platform}] 最高スコア: {best_score}/100")
+        return best_post
     except Exception:
-        return 50
+        # JSON解析失敗時は生テキストをそのまま使う
+        print(f"  [{platform}] スコアリング解析失敗、生テキスト使用")
+        return text
 
 
 def improve_post(post, platform="x"):
@@ -91,20 +89,13 @@ def improve_post(post, platform="x"):
 
 改善後の投稿のみ返してください（説明・コメント不要）:"""
 
-    response = client.models.generate_content(model=MODEL, contents=prompt)
-    return response.text.strip()
+    return _generate(prompt)
 
 
 def get_best_post(platform="x"):
-    """生成→スコアリング→改善の全フローを実行"""
-    print(f"  [{platform}] 投稿案を3つ生成中...")
-    posts = generate_posts(platform)
-
-    print(f"  [{platform}] スコアリング中...")
-    scored = [(post, score_post(post)) for post in posts]
-    scored.sort(key=lambda x: x[1], reverse=True)
-    best_post, best_score = scored[0]
-    print(f"  [{platform}] 最高スコア: {best_score}/100")
+    """生成→スコアリング→改善の全フローを実行（API呼び出し2回）"""
+    print(f"  [{platform}] 投稿案を生成・スコアリング中...")
+    best_post = generate_and_score_posts(platform)
 
     print(f"  [{platform}] 投稿を改善中...")
     final_post = improve_post(best_post, platform)
