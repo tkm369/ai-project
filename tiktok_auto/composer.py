@@ -120,7 +120,8 @@ def compose_video(
             shift = int(t * 8) % H
             for y in range(H):
                 ratio = ((y + shift) % H) / H
-                frame[y, :] = [int(20 + ratio*30), int(10 + ratio*15), int(60 + ratio*80)]
+                # 明るいピンク→パープルグラデーション
+                frame[y, :] = [int(255 - ratio*60), int(100 + ratio*60), int(200 + ratio*55)]
             return frame
         bg_clip = VideoClip(_gradient_frame, duration=duration)
         bg_clip = bg_clip.with_effects([Resize((W, H))])
