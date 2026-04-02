@@ -173,18 +173,15 @@ def upload_to_tiktok(video_path: str, caption: str, headless: bool = False) -> b
             page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
             time.sleep(1)
 
-            # 右パネルのsubmit/postボタンを探す
+            # 右パネルのsubmit/postボタンを探す（優先順位順）
             for sel in [
-                '[data-e2e*="post"]',
-                '[data-e2e*="submit"]',
-                '[data-e2e*="publish"]',
-                '[data-e2e*="upload"]',
-                'button[class*="submit"]',
-                'button[class*="post"]',
-                'button[class*="publish"]',
+                '[data-e2e="post_video_button"]',   # TikTok Studio の正確なセレクタ
+                '[data-e2e="post-video-button"]',
+                '[data-e2e="submit_video_button"]',
+                '[data-e2e="submit-video-button"]',
             ]:
                 try:
-                    btn = page.locator(sel).last
+                    btn = page.locator(sel).first
                     btn.wait_for(state="visible", timeout=3000)
                     txt = btn.inner_text()
                     logger.info(f"ボタン発見 ({sel}): '{txt}'")
