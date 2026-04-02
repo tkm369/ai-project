@@ -125,14 +125,35 @@ def upload_to_tiktok(video_path: str, caption: str, headless: bool = False) -> b
                 except Exception:
                     continue
 
-            time.sleep(2)
+            # 動画処理完了を待つ（最大90秒）
+            logger.info("動画処理中... (最大90秒)")
+            for _ in range(18):
+                time.sleep(5)
+                buttons = page.evaluate("() => Array.from(document.querySelectorAll('button')).map(b => b.innerText.trim())")
+                logger.info(f"現在のボタン一覧: {buttons}")
+                # 投稿ボタンが出たら止まる
+                post_keywords = ["投稿する", "Post", "公開する", "投稿", "公開"]
+                if any(any(k in b for k in post_keywords) for b in buttons):
+                    break
+
+            # 「次へ」がある場合はクリックして次のステップへ
+            for next_text in ["次へ", "Next", "続ける"]:
+                try:
+                    btn = page.get_by_role("button", name=next_text).first
+                    btn.wait_for(timeout=3000)
+                    btn.click()
+                    logger.info(f"次へボタンをクリック: {next_text}")
+                    time.sleep(3)
+                    break
+                except Exception:
+                    continue
 
             # 投稿ボタンをクリック
             posted = False
-            for btn_text in ["投稿する", "Post", "公開する", "Upload"]:
+            for btn_text in ["投稿する", "投稿", "Post", "公開する", "公開"]:
                 try:
                     btn = page.get_by_role("button", name=btn_text).first
-                    btn.wait_for(timeout=5000)
+                    btn.wait_for(timeout=8000)
                     btn.click()
                     posted = True
                     logger.info(f"投稿ボタンをクリック: {btn_text}")
@@ -141,7 +162,9 @@ def upload_to_tiktok(video_path: str, caption: str, headless: bool = False) -> b
                     continue
 
             if not posted:
-                logger.error("投稿ボタンが見つかりませんでした")
+                # ボタン一覧をログに出して確認
+                buttons = page.evaluate("() => Array.from(document.querySelectorAll('button')).map(b => b.innerText.trim()).filter(t => t)")
+                logger.error(f"投稿ボタンが見つかりませんでした。現在のボタン: {buttons}")
                 return False
 
             # 投稿完了を待つ
