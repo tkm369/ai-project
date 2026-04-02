@@ -94,7 +94,15 @@ def upload_to_tiktok(
 
             # ---- 動画ファイルをアップロード -------------------------
             logger.info(f"動画をアップロード中: {video_path}")
-            time.sleep(3)
+            time.sleep(5)  # ページ読み込み待ち延長
+
+            # デバッグ: 現在のフレーム一覧を出力
+            logger.info(f"[DEBUG] フレーム数: {len(page.frames)}")
+            for i, f in enumerate(page.frames):
+                logger.info(f"[DEBUG] frame[{i}]: {f.url[:80]}")
+
+            # デバッグ: ページタイトルとURL
+            logger.info(f"[DEBUG] page.title={page.title()}, url={page.url}")
 
             # iframeの中にfile inputがある場合を考慮
             upload_input = None
@@ -123,7 +131,7 @@ def upload_to_tiktok(
             if not upload_input:
                 # ドラッグ&ドロップエリアをクリックしてfile inputを出す
                 logger.info("ドラッグ&ドロップエリアを探しています...")
-                for sel in ['[class*="upload"]', '[class*="drag"]', 'label[for]', 'button:has-text("ファイル")']:
+                for sel in ['[class*="upload"]', '[class*="drag"]', 'label[for]', 'button:has-text("ファイル")', 'button:has-text("Select video")', 'button:has-text("Upload")']:
                     try:
                         el = page.locator(sel).first
                         el.wait_for(timeout=3000)
@@ -138,6 +146,12 @@ def upload_to_tiktok(
                         continue
 
             if not upload_input:
+                # デバッグ: ページのHTML断片を記録
+                try:
+                    html_snippet = page.evaluate("() => document.body.innerHTML.slice(0, 2000)")
+                    logger.info(f"[DEBUG] body HTML: {html_snippet}")
+                except Exception:
+                    pass
                 raise Exception("file inputが見つかりませんでした。TikTokページのデバッグが必要です。")
 
             # file inputを表示状態にして動画をセット

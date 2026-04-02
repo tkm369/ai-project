@@ -48,6 +48,15 @@ jobs:
           cd tiktok_auto
           python post_job.py
 
+      # ---- デバッグ用スクショをアーティファクトとして保存 --------
+      - name: Upload debug screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: tiktok_auto/screenshots/
+          retention-days: 3
+
       # ---- queue.json / seen_ids.json をコミット ---------------
       - name: Commit state update
         run: |
