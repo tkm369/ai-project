@@ -76,6 +76,11 @@ def upload_to_tiktok(
         page = context.new_page()
 
         try:
+            # ---- まずトップページに移動してCookieを揃える ----
+            logger.info("TikTokトップページでCookieを初期化中...")
+            page.goto("https://www.tiktok.com", timeout=30000)
+            time.sleep(5)
+
             # ---- TikTok Studio 投稿ページへ移動 (複数URLを試す) ----
             upload_urls = [
                 "https://www.tiktok.com/tiktokstudio/upload",
