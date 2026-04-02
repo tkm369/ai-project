@@ -160,31 +160,21 @@ def upload_to_tiktok(video_path: str, caption: str, headless: bool = False) -> b
 
             time.sleep(1)
 
-            # 投稿ボタンをクリック（プライマリボタンクラスで検索）
+            # 投稿ボタンをクリック
+            # プライマリボタン（Button__root--type-primary）を最優先で探す
             posted = False
 
-            # まずテキストで検索
-            for btn_text in ["投稿する", "投稿", "Post", "公開する", "公開", "アップロード"]:
-                try:
-                    btn = page.get_by_role("button", name=btn_text).first
-                    btn.wait_for(timeout=3000)
-                    btn.click()
-                    posted = True
-                    logger.info(f"投稿ボタンをクリック（テキスト）: {btn_text}")
-                    break
-                except Exception:
-                    continue
-
-            # プライマリボタンクラスで検索
-            if not posted:
-                try:
-                    btn = page.locator('[class*="Button__root--type-primary"]').last
-                    btn.wait_for(timeout=5000)
-                    logger.info(f"プライマリボタンをクリック")
-                    btn.click()
-                    posted = True
-                except Exception as e:
-                    logger.warning(f"プライマリボタン失敗: {e}")
+            try:
+                # loading-falseのプライマリボタンを探す（処理完了後に有効になる）
+                btn = page.locator('[class*="Button__root--type-primary"][class*="loading-false"]').last
+                btn.wait_for(state="visible", timeout=10000)
+                btn_text_val = btn.inner_text()
+                logger.info(f"プライマリボタン発見: '{btn_text_val}'")
+                btn.click()
+                posted = True
+                logger.info("プライマリボタンをクリック")
+            except Exception as e:
+                logger.warning(f"プライマリボタン失敗: {e}")
 
             if not posted:
                 buttons = page.evaluate("() => Array.from(document.querySelectorAll('button')).map(b => b.innerText.trim()).filter(t => t)")
