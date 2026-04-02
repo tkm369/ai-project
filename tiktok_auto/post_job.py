@@ -17,5 +17,11 @@ logging.basicConfig(
     ]
 )
 
+from fetcher import fetch_and_enqueue
 from scheduler import run_post_job
+
+# 1) X/Threads の新着を自動取得してキューに追加
+fetch_and_enqueue()
+
+# 2) キューから1件処理してTikTokに投稿
 run_post_job()

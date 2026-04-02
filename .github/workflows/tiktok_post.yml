@@ -29,24 +29,30 @@ jobs:
       # ---- 依存ライブラリをインストール --------------------------
       - name: Install dependencies
         run: |
-          pip install playwright moviepy Pillow schedule numpy
+          pip install -r tiktok_auto/requirements.txt
           playwright install chromium --with-deps
 
       # ---- ffmpeg は ubuntu-latest に標準搭載 ------------------
 
-      # ---- 1件投稿 (キューから取り出して処理) -------------------
+      # ---- 新着取得 → 動画生成 → TikTok投稿 -------------------
       - name: Run post job
         env:
-          TIKTOK_SESSION_ID: ${{ secrets.TIKTOK_SESSION_ID }}
+          TIKTOK_SESSION_ID:      ${{ secrets.TIKTOK_SESSION_ID }}
+          X_API_KEY:              ${{ secrets.X_API_KEY }}
+          X_API_SECRET:           ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN:         ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET:  ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          THREADS_ACCESS_TOKEN:   ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_USER_ID:        ${{ secrets.THREADS_USER_ID }}
         run: |
           cd tiktok_auto
           python post_job.py
 
-      # ---- 更新した queue.json をコミット ----------------------
-      - name: Commit queue update
+      # ---- queue.json / seen_ids.json をコミット ---------------
+      - name: Commit state update
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add tiktok_auto/queue.json
-          git diff --staged --quiet || git commit -m "chore: queue update [skip ci]"
+          git add tiktok_auto/queue.json tiktok_auto/seen_ids.json
+          git diff --staged --quiet || git commit -m "chore: auto queue update [skip ci]"
           git push
