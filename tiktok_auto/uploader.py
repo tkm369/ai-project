@@ -140,33 +140,53 @@ def upload_to_tiktok(video_path: str, caption: str, headless: bool = False) -> b
                 if any(any(k in b for k in post_keywords) for b in buttons):
                     break
 
-            # 「次へ」がある場合はクリックして次のステップへ
-            for next_text in ["次へ", "Next", "続ける"]:
+            # キャプション入力（タイトル欄 or テキストエリア）
+            caption_short = caption[:150]
+            for sel in [
+                '[class*="title"] input',
+                'input[placeholder]',
+                '[contenteditable="true"]',
+                'textarea',
+            ]:
                 try:
-                    btn = page.get_by_role("button", name=next_text).first
-                    btn.wait_for(timeout=3000)
-                    btn.click()
-                    logger.info(f"次へボタンをクリック: {next_text}")
-                    time.sleep(3)
+                    el = page.locator(sel).first
+                    el.wait_for(timeout=3000)
+                    el.click()
+                    el.fill(caption_short)
+                    logger.info(f"キャプション入力: {sel}")
                     break
                 except Exception:
                     continue
 
-            # 投稿ボタンをクリック
+            time.sleep(1)
+
+            # 投稿ボタンをクリック（プライマリボタンクラスで検索）
             posted = False
-            for btn_text in ["投稿する", "投稿", "Post", "公開する", "公開"]:
+
+            # まずテキストで検索
+            for btn_text in ["投稿する", "投稿", "Post", "公開する", "公開", "アップロード"]:
                 try:
                     btn = page.get_by_role("button", name=btn_text).first
-                    btn.wait_for(timeout=8000)
+                    btn.wait_for(timeout=3000)
                     btn.click()
                     posted = True
-                    logger.info(f"投稿ボタンをクリック: {btn_text}")
+                    logger.info(f"投稿ボタンをクリック（テキスト）: {btn_text}")
                     break
                 except Exception:
                     continue
 
+            # プライマリボタンクラスで検索
             if not posted:
-                # ボタン一覧をログに出して確認
+                try:
+                    btn = page.locator('[class*="Button__root--type-primary"]').last
+                    btn.wait_for(timeout=5000)
+                    logger.info(f"プライマリボタンをクリック")
+                    btn.click()
+                    posted = True
+                except Exception as e:
+                    logger.warning(f"プライマリボタン失敗: {e}")
+
+            if not posted:
                 buttons = page.evaluate("() => Array.from(document.querySelectorAll('button')).map(b => b.innerText.trim()).filter(t => t)")
                 logger.error(f"投稿ボタンが見つかりませんでした。現在のボタン: {buttons}")
                 return False
