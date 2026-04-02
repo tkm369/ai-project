@@ -75,10 +75,12 @@ def add_to_queue(url: str, caption_override: str = ""):
 
 
 def get_next_pending() -> dict | None:
-    """次のpendingアイテムを返す"""
+    """次のpending または failed アイテムを返す（failed も再試行）"""
     queue = load_queue()
     for item in queue:
-        if item["status"] == "pending":
+        if item["status"] in ("pending", "failed"):
+            item["status"] = "pending"  # failedをpendingに戻す
+            save_queue(queue)
             return item
     return None
 
