@@ -66,18 +66,22 @@ def upload_to_tiktok(
             filename=video_path,
             description=caption,
             cookies=cookies_path,
-            headless=headless,
+            headless=False,   # ローカルPC実行なのでheadlessオフ（#root hidden回避）
             browser="chrome",
         )
 
-        # results は list of UploadResult
-        if results and results[0].success:
-            logger.info("投稿完了!")
-            return True
-        else:
-            err = results[0].error if results else "不明なエラー"
+        # results は list（dict or object どちらも対応）
+        if results:
+            r = results[0]
+            success = r.get('success', False) if isinstance(r, dict) else getattr(r, 'success', False)
+            if success:
+                logger.info("投稿完了!")
+                return True
+            err = r.get('error', '不明') if isinstance(r, dict) else getattr(r, 'error', '不明')
             logger.error(f"アップロード失敗: {err}")
-            return False
+        else:
+            logger.error("結果が空です")
+        return False
 
     except Exception as e:
         logger.error(f"アップロード中にエラー: {e}")
