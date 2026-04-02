@@ -161,20 +161,38 @@ def upload_to_tiktok(video_path: str, caption: str, headless: bool = False) -> b
             time.sleep(1)
 
             # 投稿ボタンをクリック
-            # プライマリボタン（Button__root--type-primary）を最優先で探す
             posted = False
 
-            try:
-                # loading-falseのプライマリボタンを探す（処理完了後に有効になる）
-                btn = page.locator('[class*="Button__root--type-primary"][class*="loading-false"]').last
-                btn.wait_for(state="visible", timeout=10000)
-                btn_text_val = btn.inner_text()
-                logger.info(f"プライマリボタン発見: '{btn_text_val}'")
-                btn.click()
-                posted = True
-                logger.info("プライマリボタンをクリック")
-            except Exception as e:
-                logger.warning(f"プライマリボタン失敗: {e}")
+            # data-e2e属性一覧をログ出力
+            e2e_attrs = page.evaluate("""() => Array.from(document.querySelectorAll('[data-e2e]'))
+                .map(el => el.getAttribute('data-e2e') + '=' + (el.innerText||'').slice(0,20))
+                .filter(t=>t)""")
+            logger.info(f"data-e2e要素: {e2e_attrs[:15]}")
+
+            # ページ最下部までスクロール（投稿ボタンが隠れている可能性）
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            time.sleep(1)
+
+            # 右パネルのsubmit/postボタンを探す
+            for sel in [
+                '[data-e2e*="post"]',
+                '[data-e2e*="submit"]',
+                '[data-e2e*="publish"]',
+                '[data-e2e*="upload"]',
+                'button[class*="submit"]',
+                'button[class*="post"]',
+                'button[class*="publish"]',
+            ]:
+                try:
+                    btn = page.locator(sel).last
+                    btn.wait_for(state="visible", timeout=3000)
+                    txt = btn.inner_text()
+                    logger.info(f"ボタン発見 ({sel}): '{txt}'")
+                    btn.click()
+                    posted = True
+                    break
+                except Exception:
+                    continue
 
             if not posted:
                 buttons = page.evaluate("() => Array.from(document.querySelectorAll('button')).map(b => b.innerText.trim()).filter(t => t)")
