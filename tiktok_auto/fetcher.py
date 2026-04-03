@@ -114,12 +114,14 @@ def fetch_threads_posts(limit: int = 5) -> list[dict]:
         resp = requests.get(
             f"https://graph.threads.net/v1.0/{user_id}/threads",
             params={
-                "fields":       "id,permalink,media_type,text",
+                "fields":       "id,permalink,text",
                 "limit":        limit,
                 "access_token": access_token,
             },
             timeout=15,
         )
+        if not resp.ok:
+            logger.error(f"Threads API エラー詳細: {resp.status_code} {resp.text}")
         resp.raise_for_status()
         data = resp.json().get("data", [])
 
