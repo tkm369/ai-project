@@ -2,6 +2,7 @@ name: Collect Analytics
 
 permissions:
   contents: write
+  secrets: write  # トークン自動更新に必要
 
 "on":
   schedule:
@@ -28,6 +29,12 @@ jobs:
         env:
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
         run: cd sns_auto_poster && python collect_analytics.py
+
+      - name: Threadsトークンを自動更新（期限30日以内の場合）
+        env:
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cd sns_auto_poster && python refresh_tokens.py
 
       - name: トレンドキーワードを取得
         run: cd sns_auto_poster && python -c "from trends import fetch_and_save_trends; fetch_and_save_trends()"
