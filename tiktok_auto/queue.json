@@ -18,7 +18,8 @@
     "caption_override": "",
     "added_at": "2026-04-03T17:36:20.673305",
     "status": "failed",
-    "processed_at": "2026-04-03T21:02:17.079093"
+    "processed_at": "2026-04-03T21:02:17.079093",
+    "fail_count": 2
   },
   {
     "url": "https://www.threads.com/@spri_nrin/post/DWqQVxvEc1q",

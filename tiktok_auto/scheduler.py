@@ -75,11 +75,13 @@ def add_to_queue(url: str, caption_override: str = ""):
 
 
 def get_next_pending() -> dict | None:
-    """次のpending または failed アイテムを返す（failed も再試行）"""
+    """次のpending または failed アイテムを返す（2回以上failedはスキップ）"""
     queue = load_queue()
     for item in queue:
-        if item["status"] in ("pending", "failed"):
-            item["status"] = "pending"  # failedをpendingに戻す
+        if item["status"] == "pending":
+            return item
+        if item["status"] == "failed" and item.get("fail_count", 1) < 2:
+            item["status"] = "pending"
             save_queue(queue)
             return item
     return None
@@ -92,6 +94,8 @@ def mark_item(url: str, status: str):
         if item["url"] == url and item["status"] == "pending":
             item["status"] = status
             item["processed_at"] = datetime.now().isoformat()
+            if status == "failed":
+                item["fail_count"] = item.get("fail_count", 0) + 1
             break
     save_queue(queue)
 
