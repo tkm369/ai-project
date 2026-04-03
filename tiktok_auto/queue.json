@@ -17,7 +17,8 @@
     "url": "https://www.threads.com/@spri_nrin/post/DWqRrVDFEhH",
     "caption_override": "",
     "added_at": "2026-04-03T17:36:20.673305",
-    "status": "pending"
+    "status": "failed",
+    "processed_at": "2026-04-03T21:02:17.079093"
   },
   {
     "url": "https://www.threads.com/@spri_nrin/post/DWqQVxvEc1q",
@@ -35,6 +36,30 @@
     "url": "https://www.threads.com/@spri_nrin/post/DWqPrzLlRFg",
     "caption_override": "",
     "added_at": "2026-04-03T17:36:20.674306",
+    "status": "pending"
+  },
+  {
+    "url": "https://www.threads.net/post/DWpcBqok_HZ",
+    "caption_override": "",
+    "added_at": "2026-04-04T07:54:38.006410",
+    "status": "pending"
+  },
+  {
+    "url": "https://www.threads.net/post/DWrXm4rj9yC",
+    "caption_override": "",
+    "added_at": "2026-04-04T07:54:38.006410",
+    "status": "pending"
+  },
+  {
+    "url": "https://www.threads.net/post/DV2p_5GACmV",
+    "caption_override": "",
+    "added_at": "2026-04-04T07:54:38.006410",
+    "status": "pending"
+  },
+  {
+    "url": "https://www.threads.net/post/DWp4F4_kdFB",
+    "caption_override": "",
+    "added_at": "2026-04-04T07:54:38.006410",
     "status": "pending"
   }
 ]

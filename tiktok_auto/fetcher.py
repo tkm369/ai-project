@@ -1,15 +1,13 @@
 """
-fetcher.py - X/Threads の新着投稿を自動取得してキューに追加
-
-環境変数 (GitHub Secrets) から認証情報を読み取る:
-  X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET
-  THREADS_ACCESS_TOKEN, THREADS_USER_ID
+fetcher.py - Threads のハッシュタグ検索から伸びている投稿を収集してキューに追加
 """
 
 import os
 import json
+import time
 import logging
-import requests
+import re
+from datetime import datetime
 
 import config
 
@@ -17,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 QUEUE_FILE = config.QUEUE_FILE
 SEEN_FILE  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seen_ids.json")
+HASHTAG_INDEX_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hashtag_index.json")
 
 
 # ------------------------------------------------------------------ #
@@ -48,96 +47,101 @@ def save_queue(queue: list):
 
 
 # ------------------------------------------------------------------ #
-#  X (Twitter) 新着取得
+#  ハッシュタグローテーション
 # ------------------------------------------------------------------ #
 
-def fetch_x_posts(max_results: int = 5) -> list[dict]:
-    """最新のX投稿URLリストを返す"""
-    try:
-        import tweepy
+def get_next_hashtag() -> str:
+    """毎回異なるハッシュタグを順番に返す"""
+    hashtags = config.THREADS_HASHTAGS
+    if not hashtags:
+        return "スピリチュアル"
 
-        api_key        = os.environ.get("X_API_KEY")
-        api_secret     = os.environ.get("X_API_SECRET")
-        access_token   = os.environ.get("X_ACCESS_TOKEN")
-        access_secret  = os.environ.get("X_ACCESS_TOKEN_SECRET")
+    index = 0
+    if os.path.exists(HASHTAG_INDEX_FILE):
+        with open(HASHTAG_INDEX_FILE, "r") as f:
+            index = json.load(f).get("index", 0)
 
-        if not all([api_key, api_secret, access_token, access_secret]):
-            logger.warning("X API の認証情報が不足しています")
-            return []
+    tag = hashtags[index % len(hashtags)]
+    with open(HASHTAG_INDEX_FILE, "w") as f:
+        json.dump({"index": (index + 1) % len(hashtags)}, f)
 
-        client = tweepy.Client(
-            consumer_key=api_key,
-            consumer_secret=api_secret,
-            access_token=access_token,
-            access_token_secret=access_secret,
-        )
-
-        # 自分のuser_idを取得
-        me = client.get_me()
-        user_id = me.data.id
-
-        tweets = client.get_users_tweets(
-            id=user_id,
-            max_results=max_results,
-            tweet_fields=["id", "text"],
-            exclude=["retweets", "replies"],
-        )
-
-        if not tweets.data:
-            return []
-
-        results = []
-        for tweet in tweets.data:
-            url = f"https://x.com/{config.X_USERNAME}/status/{tweet.id}"
-            results.append({"url": url, "id": str(tweet.id), "platform": "x"})
-        return results
-
-    except Exception as e:
-        logger.error(f"X投稿の取得に失敗: {e}")
-        return []
+    return tag
 
 
 # ------------------------------------------------------------------ #
-#  Threads 新着取得
+#  Threads ハッシュタグページをスクレイピング
 # ------------------------------------------------------------------ #
 
-def fetch_threads_posts(limit: int = 5) -> list[dict]:
-    """最新のThreads投稿URLリストを返す"""
-    try:
-        access_token = os.environ.get("THREADS_ACCESS_TOKEN")
-        user_id      = os.environ.get("THREADS_USER_ID")
+def fetch_trending_threads(hashtag: str, limit: int = 10) -> list[dict]:
+    """
+    Threads のハッシュタグ検索ページから投稿URLを収集する。
+    戻り値: [{"url": ..., "id": ...}]
+    """
+    from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
-        if not access_token or not user_id:
-            logger.warning("Threads API の認証情報が不足しています")
-            return []
+    search_url = f"https://www.threads.net/search?q={hashtag}&serp_type=default"
+    results = []
 
-        resp = requests.get(
-            f"https://graph.threads.net/v1.0/{user_id}/threads",
-            params={
-                "fields":       "id,permalink,text",
-                "limit":        limit,
-                "access_token": access_token,
-            },
-            timeout=15,
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844},
+            device_scale_factor=2,
+            user_agent=(
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
+                "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+                "Version/17.0 Mobile/15E148 Safari/604.1"
+            ),
         )
-        if not resp.ok:
-            logger.error(f"Threads API エラー詳細: {resp.status_code} {resp.text}")
-        resp.raise_for_status()
-        data = resp.json().get("data", [])
+        page = context.new_page()
 
-        results = []
-        for post in data:
-            if post.get("permalink"):
-                results.append({
-                    "url":      post["permalink"],
-                    "id":       post["id"],
-                    "platform": "threads",
-                })
-        return results
+        try:
+            logger.info(f"Threads検索: #{hashtag} → {search_url}")
+            page.goto(search_url, wait_until="domcontentloaded", timeout=30000)
+            time.sleep(4)
 
-    except Exception as e:
-        logger.error(f"Threads投稿の取得に失敗: {e}")
-        return []
+            # ログインバナーを閉じる
+            for selector in ['[aria-label="Close"]', '[aria-label="閉じる"]', 'button:has-text("後で")']:
+                try:
+                    btn = page.locator(selector).first
+                    btn.wait_for(timeout=2000)
+                    btn.click()
+                    time.sleep(0.5)
+                    break
+                except PlaywrightTimeout:
+                    pass
+
+            # スクロールして投稿を増やす
+            for _ in range(3):
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                time.sleep(2)
+
+            # 投稿URLを全て抽出
+            # Threads の投稿URLパターン: /post/XXXXXXXXXXX
+            hrefs = page.evaluate("""() => {
+                const links = Array.from(document.querySelectorAll('a[href*="/post/"]'));
+                return [...new Set(links.map(a => a.href))];
+            }""")
+
+            for href in hrefs:
+                m = re.search(r"/post/([A-Za-z0-9_-]+)", href)
+                if not m:
+                    continue
+                post_id = m.group(1)
+                # threads.net か threads.com どちらも正規化
+                url = f"https://www.threads.net/post/{post_id}"
+                results.append({"url": url, "id": post_id})
+                if len(results) >= limit:
+                    break
+
+            logger.info(f"#{hashtag} から {len(results)} 件の投稿URLを収集")
+
+        except Exception as e:
+            logger.error(f"Threads スクレイピング失敗: {e}")
+        finally:
+            browser.close()
+
+    return results
 
 
 # ------------------------------------------------------------------ #
@@ -146,16 +150,17 @@ def fetch_threads_posts(limit: int = 5) -> list[dict]:
 
 def fetch_and_enqueue() -> int:
     """
-    X/Threads の新着投稿を取得してキューに追加。
+    Threads のハッシュタグ検索から伸びている投稿を収集してキューに追加。
     戻り値: 新規追加件数
     """
     seen  = load_seen()
     queue = load_queue()
 
-    all_posts = fetch_x_posts() + fetch_threads_posts()
-    added = 0
+    hashtag = get_next_hashtag()
+    posts = fetch_trending_threads(hashtag, limit=config.THREADS_FETCH_LIMIT)
 
-    for post in all_posts:
+    added = 0
+    for post in posts:
         post_id = post["id"]
         if post_id in seen:
             continue
@@ -163,19 +168,19 @@ def fetch_and_enqueue() -> int:
         queue.append({
             "url":              post["url"],
             "caption_override": "",
-            "added_at":         __import__("datetime").datetime.now().isoformat(),
+            "added_at":         datetime.now().isoformat(),
             "status":           "pending",
         })
         seen.add(post_id)
         added += 1
-        logger.info(f"キューに追加: [{post['platform']}] {post['url']}")
+        logger.info(f"キューに追加: {post['url']}")
 
     if added > 0:
         save_queue(queue)
         save_seen(seen)
-        logger.info(f"合計 {added} 件を追加しました")
+        logger.info(f"合計 {added} 件を追加しました (#{hashtag})")
     else:
-        logger.info("新着投稿なし")
+        logger.info(f"新着投稿なし (#{hashtag})")
 
     return added
 
