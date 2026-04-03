@@ -25,11 +25,16 @@ def post_to_x(text):
         return tweet_id
     except Exception as e:
         err_detail = str(e)
-        if hasattr(e, 'response') and e.response is not None:
-            try:
-                err_detail += f" | body: {e.response.text[:300]}"
-            except Exception:
-                pass
+        for attr in ('api_codes', 'api_messages', 'response'):
+            val = getattr(e, attr, None)
+            if val is not None:
+                try:
+                    if attr == 'response':
+                        err_detail += f" | http_body: {val.text[:300]}"
+                    else:
+                        err_detail += f" | {attr}: {val}"
+                except Exception:
+                    pass
         print(f"  [X] 投稿失敗: {err_detail}")
         return None
 
