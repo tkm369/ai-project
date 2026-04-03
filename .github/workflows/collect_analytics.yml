@@ -2,7 +2,6 @@ name: Collect Analytics
 
 permissions:
   contents: write
-  secrets: write  # トークン自動更新に必要
 
 "on":
   schedule:
