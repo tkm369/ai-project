@@ -1,11 +1,11 @@
 name: TikTok Auto Post
 
 on:
-  schedule:
-    # JST = UTC+9  →  09:00=00:00, 15:00=06:00, 21:00=12:00
-    - cron: '0 0 * * *'   # 毎日 09:00 JST
-    - cron: '0 6 * * *'   # 毎日 15:00 JST
-    - cron: '0 12 * * *'  # 毎日 21:00 JST
+  # スケジュール一時停止中
+  # schedule:
+  #   - cron: '0 0 * * *'   # 毎日 09:00 JST
+  #   - cron: '0 6 * * *'   # 毎日 15:00 JST
+  #   - cron: '0 12 * * *'  # 毎日 21:00 JST
   workflow_dispatch:       # 手動実行ボタン
 
 jobs:
