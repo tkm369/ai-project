@@ -112,7 +112,7 @@ def generate_and_score_posts(platform="x", top_posts=None):
     if AFFILIATE_LINK:
         cta_instruction = f'- 最後に「{AFFILIATE_TEXT} {AFFILIATE_LINK}」を自然に含める'
     else:
-        cta_instruction = "- 最後に「続きが気になる人はプロフへ」など、プロフィールへ誘導するCTAを入れる（URLやリンクは絶対に入れない・プレースホルダーも不可）"
+        cta_instruction = "- 末尾にCTAやプロフ誘導は入れない。代わりに「あなたはどうですか？」「コメントで教えて」など読者が反応したくなる一言で締める（URLもリンクもプレースホルダーも絶対に入れない）"
 
     prompt = f"""あなたはフォロワーを惹きつける人気SNS占い師です。
 「{theme}」というテーマで、{platform}用の投稿を3案作成し、各案のエンゲージメントスコア(0-100)を付けてください。
@@ -163,7 +163,7 @@ def improve_post(post, platform="x"):
     if AFFILIATE_LINK:
         cta_improve = "- CTAのアフィリリンクへの誘導をより自然で背中を押す表現にする"
     else:
-        cta_improve = "- プロフィール誘導CTAをより自然で気になる表現にする（URLもリンクもプレースホルダーも絶対に入れない）"
+        cta_improve = "- CTAやプロフ誘導は入れない。末尾を「あなたはどう？」「コメントで教えて」など読者が反応・保存したくなる締め方に変える（URLもリンクもプレースホルダーも絶対に入れない）"
 
     prompt = f"""以下のSNS占い投稿をより魅力的に改善してください。
 
