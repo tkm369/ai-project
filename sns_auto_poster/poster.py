@@ -24,7 +24,13 @@ def post_to_x(text):
         print(f"  [X] 投稿成功 → https://x.com/i/web/status/{tweet_id}")
         return tweet_id
     except Exception as e:
-        print(f"  [X] 投稿失敗: {e}")
+        err_detail = str(e)
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                err_detail += f" | body: {e.response.text[:300]}"
+            except Exception:
+                pass
+        print(f"  [X] 投稿失敗: {err_detail}")
         return None
 
 
