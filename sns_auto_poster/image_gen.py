@@ -65,6 +65,15 @@ STYLES = {
 
 ALL_STYLES = list(STYLES.keys())
 
+# 画像コンテンツパターン定義
+CONTENT_PATTERNS = {
+    "hook": "1行目フック（大文字）",
+    "multi_line": "冒頭2〜3行（中サイズ）",
+    "short_phrase": "最短インパクト行（特大）",
+    "question": "疑問形の行を優先表示",
+}
+ALL_CONTENT_PATTERNS = list(CONTENT_PATTERNS.keys())
+
 
 def _get_font(size):
     for path in FONT_PATHS:
@@ -109,24 +118,79 @@ def _draw_text_centered(draw, text, font, y, color, shadow_color):
     draw.text((x, y), text, font=font, fill=color)
 
 
-def _extract_hook(post_text):
-    for line in post_text.strip().split('\n'):
-        line = line.strip()
-        if line and not line.startswith('#'):
-            return line
-    return post_text.strip().split('\n')[0]
+def _get_content_lines(post_text):
+    """投稿テキストから有効な行（空行・ハッシュタグ除く）を返す"""
+    return [
+        l.strip() for l in post_text.strip().split('\n')
+        if l.strip() and not l.strip().startswith('#')
+    ]
 
 
-def create_fortune_image(post_text, output_path, style="gradient_purple"):
+def _extract_image_text(post_text, pattern):
+    """コンテンツパターンに応じて画像に表示するテキストを抽出する
+    Returns: (lines: list[str], font_size: int)
     """
-    スタイル指定でフォーチュンカード画像を生成して保存する
+    lines = _get_content_lines(post_text)
+    if not lines:
+        return [""], 62
+
+    if pattern == "hook":
+        # 1行目のみ、大フォント
+        hook = lines[0]
+        if len(hook) > 28:
+            hook = hook[:26] + "…"
+        return [hook], 62
+
+    elif pattern == "multi_line":
+        # 冒頭2〜3行、中フォント
+        selected = []
+        for l in lines[:4]:
+            if len(l) <= 22:
+                selected.append(l)
+            else:
+                selected.append(l[:20] + "…")
+            if len(selected) >= 3:
+                break
+        return selected, 44
+
+    elif pattern == "short_phrase":
+        # 最も短い行を特大フォントで（5文字以上）
+        candidates = [l for l in lines if 4 < len(l) <= 20]
+        if candidates:
+            phrase = min(candidates, key=len)
+        else:
+            phrase = lines[0][:16]
+        return [phrase], 80
+
+    elif pattern == "question":
+        # 疑問形の行を優先、なければhookに「？」
+        for l in lines:
+            if "？" in l or "?" in l:
+                if len(l) > 28:
+                    l = l[:26] + "…"
+                return [l], 58
+        hook = lines[0]
+        if not (hook.endswith("？") or hook.endswith("?")):
+            hook = hook[:22] + "？"
+        return [hook], 58
+
+    return [lines[0]], 62
+
+
+def create_fortune_image(post_text, output_path, style="gradient_purple", content_pattern="hook"):
+    """
+    スタイル・コンテンツパターン指定でフォーチュンカード画像を生成して保存する
     Args:
         post_text: 投稿テキスト
         output_path: 保存先パス (.png)
         style: スタイル名（STYLES のキー）
+        content_pattern: コンテンツパターン（CONTENT_PATTERNS のキー）
     """
     if style not in STYLES:
         style = "gradient_purple"
+    if content_pattern not in CONTENT_PATTERNS:
+        content_pattern = "hook"
+
     s = STYLES[style]
 
     img = _make_gradient(s["bg_top"], s["bg_bottom"])
@@ -147,19 +211,26 @@ def create_fortune_image(post_text, output_path, style="gradient_purple"):
     _draw_text_centered(draw, s["header"], header_font,
                         SIZE * 0.25, s["accent_color"], s["shadow_color"])
 
-    # メインフック
-    hook = _extract_hook(post_text)
-    if len(hook) > 28:
-        hook = hook[:26] + "…"
+    # コンテンツパターンに応じたテキスト抽出
+    text_lines, font_size = _extract_image_text(post_text, content_pattern)
+    main_font = _get_font(font_size)
 
-    hook_font = _get_font(62)
-    wrapped = textwrap.wrap(hook, width=14)
-    line_h = 80
-    total_h = len(wrapped) * line_h
+    # 行間はフォントサイズに比例
+    line_h = int(font_size * 1.3)
+    # 折り返し幅もフォントサイズに反比例
+    wrap_width = max(8, int(900 / font_size))
+
+    # 全行を折り返し展開
+    all_wrapped = []
+    for line in text_lines:
+        wrapped = textwrap.wrap(line, width=wrap_width) or [line]
+        all_wrapped.extend(wrapped)
+
+    total_h = len(all_wrapped) * line_h
     y_start = (SIZE - total_h) / 2 - 10
 
-    for i, line in enumerate(wrapped):
-        _draw_text_centered(draw, line, hook_font,
+    for i, line in enumerate(all_wrapped):
+        _draw_text_centered(draw, line, main_font,
                             y_start + i * line_h,
                             s["text_color"], s["shadow_color"])
 

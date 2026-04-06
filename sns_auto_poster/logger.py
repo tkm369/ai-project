@@ -21,7 +21,7 @@ def save_log(log):
     with open(LOG_FILE, "w", encoding="utf-8") as f:
         json.dump(log, f, ensure_ascii=False, indent=2)
 
-def add_post(post_id, platform, content, time_slot, has_affiliate=False, has_image=False, length_category=None, image_style=None):
+def add_post(post_id, platform, content, time_slot, has_affiliate=False, has_image=False, length_category=None, image_style=None, image_content_pattern=None):
     log = load_log()
     jst = pytz.timezone("Asia/Tokyo")
     entry = {
@@ -33,6 +33,7 @@ def add_post(post_id, platform, content, time_slot, has_affiliate=False, has_ima
         "has_affiliate": has_affiliate,
         "has_image": has_image,
         "image_style": image_style,
+        "image_content_pattern": image_content_pattern,
         "length_category": length_category,
         "metrics": None,
         "metrics_collected": False
@@ -93,6 +94,26 @@ def get_length_stats():
     return {
         cat: {"avg_rate": sum(r) / len(r) if r else 0, "count": len(r)}
         for cat, r in data.items()
+    }
+
+
+def get_image_content_stats():
+    """画像コンテンツパターン別エンゲージメント率を返す"""
+    from image_gen import ALL_CONTENT_PATTERNS
+    log = load_log()
+    data = {p: [] for p in ALL_CONTENT_PATTERNS}
+    for p in log:
+        if not p.get("metrics_collected") or not p.get("metrics"):
+            continue
+        if p.get("platform") != "threads" or not p.get("has_image"):
+            continue
+        rate = p["metrics"].get("engagement_rate", 0)
+        pattern = p.get("image_content_pattern")
+        if pattern in data:
+            data[pattern].append(rate)
+    return {
+        pt: {"avg_rate": sum(r) / len(r) if r else 0, "count": len(r)}
+        for pt, r in data.items()
     }
 
 

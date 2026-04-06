@@ -7,7 +7,7 @@ import pytz
 
 from generator import get_best_post, get_time_theme
 from poster import post_to_x, post_to_threads
-from logger import add_post, count_posts_today, get_time_slot_stats, get_image_vs_text_stats, get_length_stats, get_image_style_stats
+from logger import add_post, count_posts_today, get_time_slot_stats, get_image_vs_text_stats, get_length_stats, get_image_style_stats, get_image_content_stats
 from config import AFFILIATE_LINK
 
 MAX_POSTS_PER_DAY = 6
@@ -128,6 +128,36 @@ def decide_image_style():
         return chosen
 
 
+def decide_image_content():
+    """画像コンテンツパターンをエンゲージデータで判断する"""
+    from image_gen import ALL_CONTENT_PATTERNS, CONTENT_PATTERNS
+    stats = get_image_content_stats()
+    weights_mature = [0.60, 0.25, 0.10, 0.05]
+
+    all_ready = all(stats.get(p, {}).get("count", 0) >= AB_MIN_SAMPLES for p in ALL_CONTENT_PATTERNS)
+
+    if not all_ready:
+        least = min(ALL_CONTENT_PATTERNS, key=lambda p: stats.get(p, {}).get("count", 0))
+        counts = {p: stats.get(p, {}).get("count", 0) for p in ALL_CONTENT_PATTERNS}
+        count_str = " ".join(f"{p}:{counts[p]}" for p in ALL_CONTENT_PATTERNS)
+        print(f"  [A/B] 画像コンテンツ探索中 ({count_str}) → {least}: {CONTENT_PATTERNS[least]}")
+        return least
+    else:
+        sorted_patterns = sorted(ALL_CONTENT_PATTERNS, key=lambda p: stats[p]["avg_rate"], reverse=True)
+        r = random.random()
+        cumulative = 0
+        chosen = sorted_patterns[0]
+        for pattern, w in zip(sorted_patterns, weights_mature):
+            cumulative += w
+            if r < cumulative:
+                chosen = pattern
+                break
+        rates = {p: stats[p]["avg_rate"] for p in ALL_CONTENT_PATTERNS}
+        rate_str = " ".join(f"{p}:{rates[p]:.2%}" for p in sorted_patterns)
+        print(f"  [A/B] 画像コンテンツ成熟 ({rate_str}) → {chosen}: {CONTENT_PATTERNS[chosen]}")
+        return chosen
+
+
 def decide_use_image():
     """画像を使うかどうかをエンゲージデータで判断する
     - データ不足: 50/50でランダム（A/B探索）
@@ -215,17 +245,21 @@ def generate_mode():
     image_filename = None
     image_url = None
     image_style = None
+    image_content_pattern = None
     if use_image:
         try:
             from image_gen import create_fortune_image, upload_image
             image_style = decide_image_style()
+            image_content_pattern = decide_image_content()
             os.makedirs(IMAGES_DIR, exist_ok=True)
             jst = pytz.timezone("Asia/Tokyo")
             ts = datetime.now(jst).strftime("%Y%m%d_%H%M%S")
             image_filename = f"{ts}.png"
             image_path = os.path.join(IMAGES_DIR, image_filename)
-            create_fortune_image(post_content, image_path, style=image_style)
-            print(f"  画像生成: {image_filename} (スタイル: {image_style})")
+            create_fortune_image(post_content, image_path,
+                                 style=image_style,
+                                 content_pattern=image_content_pattern)
+            print(f"  画像生成: {image_filename} (スタイル:{image_style} / コンテンツ:{image_content_pattern})")
             image_url = upload_image(image_path)
             if image_url:
                 print(f"  画像URL: {image_url}")
@@ -233,11 +267,13 @@ def generate_mode():
                 print(f"  ⚠️ アップロード失敗 → テキスト投稿に変更")
                 image_filename = None
                 image_style = None
+                image_content_pattern = None
         except Exception as e:
             print(f"  ⚠️ 画像生成失敗 (テキスト投稿に変更): {e}")
             image_filename = None
             image_url = None
             image_style = None
+            image_content_pattern = None
     else:
         print(f"  テキストのみで投稿")
 
@@ -249,6 +285,7 @@ def generate_mode():
         "image_filename": image_filename,
         "image_url": image_url,
         "image_style": image_style,
+        "image_content_pattern": image_content_pattern,
         "length_category": length_category,
     })
     print(f"  pending_post.json を保存しました")
@@ -291,10 +328,11 @@ def post_mode():
     has_image = bool(image_filename)
     length_category = pending.get("length_category")
     image_style = pending.get("image_style")
+    image_content_pattern = pending.get("image_content_pattern")
     if x_id:
-        add_post(x_id, "x", post_content, time_slot, has_affiliate=has_affiliate, has_image=has_image, length_category=length_category, image_style=image_style)
+        add_post(x_id, "x", post_content, time_slot, has_affiliate=has_affiliate, has_image=has_image, length_category=length_category, image_style=image_style, image_content_pattern=image_content_pattern)
     if threads_id:
-        add_post(threads_id, "threads", post_content, time_slot, has_affiliate=has_affiliate, has_image=has_image, length_category=length_category, image_style=image_style)
+        add_post(threads_id, "threads", post_content, time_slot, has_affiliate=has_affiliate, has_image=has_image, length_category=length_category, image_style=image_style, image_content_pattern=image_content_pattern)
 
     # 古い画像を削除
     try:
