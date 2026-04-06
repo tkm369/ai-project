@@ -10,7 +10,16 @@ from poster import post_to_x, post_to_threads
 from logger import add_post, count_posts_today, get_time_slot_stats, get_image_vs_text_stats, get_length_stats, get_image_style_stats, get_image_content_stats
 from config import AFFILIATE_LINK
 
-MAX_POSTS_PER_DAY = 3  # スパム防止のため1日3件に制限
+MAX_POSTS_PER_DAY = 6  # 上限（実際の当日投稿数は3〜6でランダム）
+
+
+def get_today_post_limit():
+    """当日の投稿上限を3〜6のランダムで決定（日付シードで1日固定）"""
+    jst = pytz.timezone("Asia/Tokyo")
+    today_seed = int(datetime.now(jst).strftime("%Y%m%d"))
+    rng = random.Random(today_seed)
+    limit = rng.randint(3, 6)
+    return limit
 MIN_DATA_POINTS = 5
 SCORE_THRESHOLD = 50   # これ未満のスコアは投稿スキップ
 AB_MIN_SAMPLES = 5     # 画像/テキスト各タイプのA/B判定に必要な最低サンプル数
@@ -22,8 +31,9 @@ IMAGES_DIR = os.path.join(os.path.dirname(__file__), "generated_images")
 def should_post_now(time_slot):
     """今この時間帯に投稿すべきか判断する（PDCAベース）"""
     posts_today = count_posts_today()
-    if posts_today >= MAX_POSTS_PER_DAY:
-        return False, f"本日 {posts_today}/{MAX_POSTS_PER_DAY} 回投稿済み（上限到達）"
+    today_limit = get_today_post_limit()
+    if posts_today >= today_limit:
+        return False, f"本日 {posts_today}/{today_limit} 回投稿済み（上限到達）"
 
     stats = get_time_slot_stats()
     slot_stat = stats.get(time_slot)

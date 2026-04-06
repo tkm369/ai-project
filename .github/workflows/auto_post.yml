@@ -5,9 +5,7 @@ permissions:
 
 "on":
   schedule:
-    - cron: '0 0 * * *'   # JST 9:00（スパム防止: 1日3回に制限）
-    - cron: '0 7 * * *'   # JST 16:00
-    - cron: '0 12 * * *'  # JST 21:00
+    - cron: '0 */2 * * *'  # 2時間ごとに起動（1日の投稿数は3〜6でランダム）
   workflow_dispatch:        # GitHub上から手動実行も可能
 
 jobs:
