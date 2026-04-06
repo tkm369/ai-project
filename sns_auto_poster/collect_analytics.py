@@ -23,12 +23,12 @@ def collect():
         if entry.get("platform") != "threads":
             continue
 
-        # 24時間以上経過しているか確認
+        # 2時間以上経過しているか確認（GitHub Actionsの実行間隔と合わせる）
         try:
             posted_at = datetime.fromisoformat(entry["timestamp"])
             if posted_at.tzinfo is None:
                 posted_at = jst.localize(posted_at)
-            if now - posted_at < timedelta(hours=24):
+            if now - posted_at < timedelta(hours=2):
                 continue
         except Exception:
             continue

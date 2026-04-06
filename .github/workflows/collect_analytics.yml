@@ -5,7 +5,7 @@ permissions:
 
 "on":
   schedule:
-    - cron: '0 15 * * *'   # UTC 15:00 = JST 00:00 (深夜に昨日分を収集)
+    - cron: '30 */2 * * *'  # 2時間ごとに収集（auto_postの30分後）
   workflow_dispatch:
 
 jobs:

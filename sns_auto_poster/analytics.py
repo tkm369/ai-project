@@ -16,7 +16,9 @@ def fetch_post_insights(post_id):
             return None
         metrics = {}
         for item in data["data"]:
-            val = item.get("total_value", item.get("values", [{}])[0].get("value", 0))
+            raw = item.get("total_value", item.get("values", [{}])[0].get("value", 0))
+            # total_value は {"value": N} の辞書形式で返ることがある
+            val = raw.get("value", 0) if isinstance(raw, dict) else (raw or 0)
             metrics[item["name"]] = val
         views = max(metrics.get("views", 1), 1)
         interactions = metrics.get("likes", 0) + metrics.get("replies", 0) + metrics.get("reposts", 0)
