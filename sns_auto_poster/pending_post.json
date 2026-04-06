@@ -1,4 +1,11 @@
 {
-  "skip": true,
-  "reason": "score 7.2 < threshold 50"
+  "skip": false,
+  "content": "深夜、ふと目が覚めたあなた。それはもう偶然じゃない、潜在意識からの緊急メッセージ。\n誰にも言えない不安は、大きなチャンスの前兆かも。この声、あなたはどう読み解く？🌙",
+  "score": 83,
+  "time_slot": "00",
+  "image_filename": null,
+  "image_url": null,
+  "image_style": null,
+  "image_content_pattern": null,
+  "length_category": "short"
 }
