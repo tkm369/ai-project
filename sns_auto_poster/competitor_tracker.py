@@ -30,7 +30,7 @@ MAX_REFERENCE_POSTS  = 60    # reference_posts.jsonの最大保持件数
 MIN_TEXT_LENGTH      = 30    # 短すぎる投稿は除外
 DECLINE_THRESHOLD    = 0.4   # 直近avg ÷ ピークavg がこの値未満 → 削除候補
 DECLINE_STRIKES      = 2     # この回数連続で低下したら削除
-MAX_ACCOUNTS         = 20    # 監視アカウントの上限
+MAX_ACCOUNTS         = 15    # 監視アカウントの上限（10〜15が最適）
 SEARCH_KEYWORDS      = ["復縁 Threads バズ", "占い スピリチュアル Threads フォロワー増", "引き寄せ 恋愛 Threads 人気アカウント"]
 
 STATS_PATH = os.path.join(os.path.dirname(__file__), "account_stats.json")
@@ -230,34 +230,67 @@ def discover_new_accounts(existing_usernames):
         return []
 
 
+def _get_lowest_active(stats):
+    """アクティブなアカウントの中で最もエンゲージが低いものを返す (username, avg_likes)"""
+    candidates = []
+    for username, entry in stats["accounts"].items():
+        if entry["status"] != "active":
+            continue
+        checks = entry.get("checks", [])
+        if checks:
+            avg = checks[-1]["avg_likes"]
+        else:
+            avg = 0.0
+        candidates.append((username, avg))
+    if not candidates:
+        return None, 0.0
+    candidates.sort(key=lambda x: x[1])
+    return candidates[0]  # (username, avg_likes) of lowest
+
+
 def validate_and_add_accounts(stats, candidates):
-    """候補アカウントを検証して追加"""
+    """候補アカウントを検証して追加。上限時は最低エンゲージとスワップ"""
     existing = set(stats["accounts"].keys())
-    active_count = sum(1 for e in stats["accounts"].values() if e["status"] == "active")
     added = []
+    swapped = []
 
     for username in candidates:
         if username in existing:
             continue
-        if active_count >= MAX_ACCOUNTS:
-            print(f"  上限({MAX_ACCOUNTS}件)に達しているためスキップ")
-            break
 
         print(f"  検証中: @{username}")
         _, posts = fetch_account_data(username)
         if not posts:
             continue
 
-        avg_likes = sum(p["like_count"] for p in posts) / len(posts)
-        if avg_likes >= MIN_LIKE_TO_ADD:
+        new_avg = sum(p["like_count"] for p in posts) / len(posts)
+        if new_avg < MIN_LIKE_TO_ADD:
+            print(f"    ❌ スキップ: @{username} (avg_likes={new_avg:.1f} < {MIN_LIKE_TO_ADD})")
+            continue
+
+        active_count = sum(1 for e in stats["accounts"].values() if e["status"] == "active")
+
+        if active_count < MAX_ACCOUNTS:
+            # 空きあり → そのまま追加
             stats["accounts"][username] = _new_account_entry("auto_discovered")
             existing.add(username)
-            active_count += 1
             added.append(username)
-            print(f"    ✅ 追加: @{username} (avg_likes={avg_likes:.1f})")
+            print(f"    ✅ 追加: @{username} (avg_likes={new_avg:.1f})")
         else:
-            print(f"    ❌ スキップ: @{username} (avg_likes={avg_likes:.1f} < {MIN_LIKE_TO_ADD})")
+            # 上限到達 → 最低エンゲージとスワップ検討
+            lowest_name, lowest_avg = _get_lowest_active(stats)
+            if lowest_name and new_avg > lowest_avg:
+                stats["accounts"][lowest_name]["status"] = "removed"
+                stats["accounts"][username] = _new_account_entry("auto_discovered")
+                existing.add(username)
+                added.append(username)
+                swapped.append((lowest_name, username))
+                print(f"    🔄 スワップ: @{lowest_name}(avg={lowest_avg:.1f}) → @{username}(avg={new_avg:.1f})")
+            else:
+                print(f"    ❌ スキップ: @{username}(avg={new_avg:.1f}) ≤ 最低ライン @{lowest_name}(avg={lowest_avg:.1f})")
 
+    if swapped:
+        print(f"  スワップ完了: {len(swapped)}件")
     return added
 
 
