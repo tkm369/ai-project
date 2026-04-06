@@ -38,15 +38,16 @@ jobs:
       - name: トレンドキーワードを取得
         run: cd sns_auto_poster && python -c "from trends import fetch_and_save_trends; fetch_and_save_trends()"
 
-      - name: 競合アカウントの投稿を収集・学習データに追加
+      - name: 競合アカウントの自動管理（発見・追跡・削除・学習データ更新）
         env:
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
-        run: cd sns_auto_poster && python competitor_tracker.py
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: cd sns_auto_poster && python -c "from competitor_tracker import run; run()"
 
       - name: 実績ログ・トレンド・ハッシュタグ統計をコミット
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add sns_auto_poster/posts_log.json sns_auto_poster/trends_cache.json sns_auto_poster/hashtag_stats.json sns_auto_poster/reference_posts.json
+          git add sns_auto_poster/posts_log.json sns_auto_poster/trends_cache.json sns_auto_poster/hashtag_stats.json sns_auto_poster/reference_posts.json sns_auto_poster/account_stats.json
           git diff --staged --quiet || git commit -m "chore: 実績データ・トレンド・競合学習データ更新 [skip ci]"
           git push

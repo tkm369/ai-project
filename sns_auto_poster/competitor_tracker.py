@@ -1,15 +1,21 @@
 """
-競合アカウントの投稿を取得し、高エンゲージ投稿をreference_posts.jsonに自動追加する
+競合アカウントの自動管理モジュール
+- 高エンゲージ投稿をreference_posts.jsonに自動追加
+- アカウントごとのエンゲージ推移を記録
+- エンゲージが低下したアカウントを自動削除
+- Geminiウェブ検索で新しいバズアカウントを自動発見
 """
 import json
 import os
 import time
+import re
 import requests
+from datetime import datetime, timezone
 from urllib.parse import quote
-from config import THREADS_ACCESS_TOKEN
+from config import THREADS_ACCESS_TOKEN, GEMINI_API_KEY
 
-# ─── 監視する競合アカウント ────────────────────────────────
-COMPETITOR_USERNAMES = [
+# ─── 設定 ────────────────────────────────────────────────
+INITIAL_USERNAMES = [
     "lilia_stones7",
     "shirowa_shizu",
     "tsukuyomi_rei.official",
@@ -17,14 +23,53 @@ COMPETITOR_USERNAMES = [
     "twinray_enmusubi",
 ]
 
-POSTS_PER_USER = 15       # 1アカウントから取得する最新投稿数
-MIN_LIKE_COUNT = 5        # 採用するいいね数の最低ライン（取得できた場合）
-MAX_REFERENCE_POSTS = 50  # reference_posts.jsonの最大保持件数
-MIN_TEXT_LENGTH = 30      # 短すぎる投稿は除外
+POSTS_PER_USER       = 15    # 1アカウントから取得する最新投稿数
+MIN_LIKE_TO_ADD      = 3     # 新規アカウント追加に必要な平均いいね数
+MIN_LIKE_REFERENCE   = 5     # reference_postsに採用するいいね数
+MAX_REFERENCE_POSTS  = 60    # reference_posts.jsonの最大保持件数
+MIN_TEXT_LENGTH      = 30    # 短すぎる投稿は除外
+DECLINE_THRESHOLD    = 0.4   # 直近avg ÷ ピークavg がこの値未満 → 削除候補
+DECLINE_STRIKES      = 2     # この回数連続で低下したら削除
+MAX_ACCOUNTS         = 20    # 監視アカウントの上限
+SEARCH_KEYWORDS      = ["復縁 Threads バズ", "占い スピリチュアル Threads フォロワー増", "引き寄せ 恋愛 Threads 人気アカウント"]
 
-BASE_URL = "https://graph.threads.net/v1.0"
+STATS_PATH = os.path.join(os.path.dirname(__file__), "account_stats.json")
+REF_PATH   = os.path.join(os.path.dirname(__file__), "reference_posts.json")
+BASE_URL   = "https://graph.threads.net/v1.0"
 
 
+# ─── account_stats.json 管理 ─────────────────────────────
+def load_stats():
+    if os.path.exists(STATS_PATH):
+        try:
+            with open(STATS_PATH, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    # 初回: 初期アカウントを登録
+    stats = {"accounts": {}}
+    for u in INITIAL_USERNAMES:
+        stats["accounts"][u] = _new_account_entry("manual")
+    save_stats(stats)
+    return stats
+
+
+def save_stats(stats):
+    with open(STATS_PATH, "w", encoding="utf-8") as f:
+        json.dump(stats, f, ensure_ascii=False, indent=2)
+
+
+def _new_account_entry(source="auto_discovered"):
+    return {
+        "added_at": datetime.now(timezone.utc).isoformat(),
+        "source": source,
+        "checks": [],        # {"date": ..., "avg_likes": ..., "post_count": ...}
+        "decline_strikes": 0,
+        "status": "active",  # active / declining / removed
+    }
+
+
+# ─── Threads API ─────────────────────────────────────────
 def _get(url, params, retries=2):
     for i in range(retries + 1):
         try:
@@ -39,31 +84,24 @@ def _get(url, params, retries=2):
 
 
 def get_user_id(username):
-    """usernameからThreads ユーザーIDを取得"""
-    # 方法①: usernameを直接パスに使う
     data = _get(f"{BASE_URL}/{quote(username)}", {
         "fields": "id,username",
         "access_token": THREADS_ACCESS_TOKEN,
     })
     if data.get("id"):
         return data["id"]
-
-    # 方法②: typeパラメータで検索
     data = _get(f"{BASE_URL}/", {
-        "type": "username",
-        "id": username,
+        "type": "username", "id": username,
         "fields": "id",
         "access_token": THREADS_ACCESS_TOKEN,
     })
     if data.get("id"):
         return data["id"]
-
-    print(f"    ユーザーID取得失敗: @{username} → {data.get('error', {}).get('message', '')}")
+    print(f"    ユーザーID取得失敗: @{username}")
     return None
 
 
 def get_user_posts(user_id, limit=15):
-    """ユーザーの最新投稿を取得（like_countを含む）"""
     data = _get(f"{BASE_URL}/{user_id}/threads", {
         "fields": "id,text,timestamp,like_count",
         "limit": limit,
@@ -72,92 +110,231 @@ def get_user_posts(user_id, limit=15):
     return data.get("data", [])
 
 
-def fetch_all_competitor_posts():
-    """全競合アカウントの投稿を収集"""
-    all_posts = []
+def fetch_account_data(username):
+    """アカウントの投稿を取得して統計を返す"""
+    user_id = get_user_id(username)
+    if not user_id:
+        return None, []
 
-    for username in COMPETITOR_USERNAMES:
-        print(f"  @{username} を取得中...")
-        user_id = get_user_id(username)
-        if not user_id:
+    posts = get_user_posts(user_id, limit=POSTS_PER_USER)
+    valid_posts = []
+    for post in posts:
+        text = (post.get("text") or "").strip()
+        if len(text) < MIN_TEXT_LENGTH:
+            continue
+        body_lines = [l for l in text.split("\n") if l.strip() and not l.strip().startswith("#")]
+        if not body_lines:
+            continue
+        valid_posts.append({
+            "text": text,
+            "like_count": post.get("like_count", 0) or 0,
+        })
+
+    time.sleep(1.5)
+    return user_id, valid_posts
+
+
+# ─── エンゲージ推移チェック・自動削除 ────────────────────
+def update_account_stats(stats):
+    """各アカウントのエンゲージ推移を記録し、低下したものを削除"""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    removed = []
+
+    for username, entry in list(stats["accounts"].items()):
+        if entry["status"] == "removed":
             continue
 
-        posts = get_user_posts(user_id, limit=POSTS_PER_USER)
-        count = 0
-        for post in posts:
-            text = (post.get("text") or "").strip()
-            if len(text) < MIN_TEXT_LENGTH:
-                continue
-            # ハッシュタグのみの行を除いた本文チェック
-            body_lines = [l for l in text.split("\n") if l.strip() and not l.strip().startswith("#")]
-            if not body_lines:
-                continue
-            all_posts.append({
-                "username": username,
-                "text": text,
-                "like_count": post.get("like_count", 0) or 0,
-                "timestamp": post.get("timestamp", ""),
-            })
-            count += 1
+        print(f"  チェック中: @{username}")
+        _, posts = fetch_account_data(username)
 
-        print(f"    → {count}件取得")
-        time.sleep(1.5)  # レート制限対策
+        if not posts:
+            print(f"    投稿取得失敗 → スキップ")
+            continue
 
-    return all_posts
+        avg_likes = sum(p["like_count"] for p in posts) / len(posts)
+        entry["checks"].append({
+            "date": today,
+            "avg_likes": round(avg_likes, 2),
+            "post_count": len(posts),
+        })
 
+        # 直近2回分のみで判断（メモリ節約のため古いチェックは10件に制限）
+        entry["checks"] = entry["checks"][-10:]
 
-def select_best_posts(posts):
-    """いいね数でソートし上位を選定"""
-    # like_countが取れている投稿と取れていない投稿を分ける
-    with_likes = [p for p in posts if p["like_count"] >= MIN_LIKE_COUNT]
-    without_likes = [p for p in posts if p["like_count"] < MIN_LIKE_COUNT]
+        # エンゲージ低下判定
+        checks = entry["checks"]
+        if len(checks) >= 2:
+            peak_likes = max(c["avg_likes"] for c in checks)
+            latest_likes = checks[-1]["avg_likes"]
+            if peak_likes > 0 and latest_likes / peak_likes < DECLINE_THRESHOLD:
+                entry["decline_strikes"] += 1
+                print(f"    ⚠️  エンゲージ低下検知 (ピーク:{peak_likes:.1f} → 直近:{latest_likes:.1f}) strikes={entry['decline_strikes']}")
+                if entry["decline_strikes"] >= DECLINE_STRIKES:
+                    entry["status"] = "removed"
+                    removed.append(username)
+                    print(f"    ❌ @{username} を監視リストから削除")
+            else:
+                entry["decline_strikes"] = 0  # 回復したらリセット
+                entry["status"] = "active"
 
-    if with_likes:
-        # いいね数で降順ソート
-        with_likes.sort(key=lambda x: x["like_count"], reverse=True)
-        selected = with_likes[:30]
-        print(f"  いいね{MIN_LIKE_COUNT}以上: {len(with_likes)}件 → 上位{len(selected)}件を採用")
-    else:
-        # like_countが取れない場合は全件採用（アカウント自体が良質なので）
-        selected = posts
-        print(f"  like_count未取得のため全{len(selected)}件を採用")
+        print(f"    avg_likes={avg_likes:.1f} / {len(posts)}件")
 
-    return [p["text"] for p in selected]
+    if removed:
+        print(f"\n削除したアカウント: {removed}")
+    return removed
 
 
-def update_reference_posts():
-    """競合投稿をreference_posts.jsonに自動マージ"""
-    print("\n=== 競合アカウント投稿収集 ===")
-    posts = fetch_all_competitor_posts()
+# ─── Geminiによる新規アカウント自動発見 ──────────────────
+def discover_new_accounts(existing_usernames):
+    """GeminiのWeb検索で新しいバズアカウントを発見"""
+    if not GEMINI_API_KEY:
+        return []
 
-    if not posts:
-        print("投稿を取得できませんでした")
-        return
+    try:
+        from google import genai
+        from google.genai import types
 
-    new_texts = select_best_posts(posts)
+        client = genai.Client(api_key=GEMINI_API_KEY)
+        keyword = SEARCH_KEYWORDS[datetime.now().day % len(SEARCH_KEYWORDS)]
 
-    # 既存のreference_posts.jsonを読み込み
-    ref_path = os.path.join(os.path.dirname(__file__), "reference_posts.json")
+        prompt = f"""{keyword} で検索して、Threadsで復縁・占い・スピリチュアル・引き寄せジャンルで最近バズっているアカウントのusernameを最大10個リストアップしてください。
+
+条件:
+- Threads（threads.net）のアカウントのみ
+- @は除いてusernameだけ記載
+- 1行1アカウント形式で返す
+- 説明不要、usernameのリストのみ返す"""
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                tools=[types.Tool(google_search=types.GoogleSearch())]
+            )
+        )
+        text = response.text or ""
+        # usernameっぽい文字列を抽出（英数字・アンダースコア・ドット）
+        candidates = re.findall(r'[@]?([a-zA-Z0-9_.]{3,30})', text)
+        # 重複・既存・短すぎるものを除外
+        new_ones = [
+            u for u in dict.fromkeys(candidates)  # 重複除去
+            if u not in existing_usernames
+            and len(u) >= 4
+            and not u.isdigit()
+        ]
+        print(f"  Gemini発見候補: {new_ones[:10]}")
+        return new_ones[:10]
+
+    except Exception as e:
+        print(f"  Gemini検索失敗: {e}")
+        return []
+
+
+def validate_and_add_accounts(stats, candidates):
+    """候補アカウントを検証して追加"""
+    existing = set(stats["accounts"].keys())
+    active_count = sum(1 for e in stats["accounts"].values() if e["status"] == "active")
+    added = []
+
+    for username in candidates:
+        if username in existing:
+            continue
+        if active_count >= MAX_ACCOUNTS:
+            print(f"  上限({MAX_ACCOUNTS}件)に達しているためスキップ")
+            break
+
+        print(f"  検証中: @{username}")
+        _, posts = fetch_account_data(username)
+        if not posts:
+            continue
+
+        avg_likes = sum(p["like_count"] for p in posts) / len(posts)
+        if avg_likes >= MIN_LIKE_TO_ADD:
+            stats["accounts"][username] = _new_account_entry("auto_discovered")
+            existing.add(username)
+            active_count += 1
+            added.append(username)
+            print(f"    ✅ 追加: @{username} (avg_likes={avg_likes:.1f})")
+        else:
+            print(f"    ❌ スキップ: @{username} (avg_likes={avg_likes:.1f} < {MIN_LIKE_TO_ADD})")
+
+    return added
+
+
+# ─── reference_posts.json 更新 ────────────────────────────
+def update_reference_posts(stats):
+    """アクティブなアカウントの高エンゲージ投稿をreference_posts.jsonに反映"""
+    all_posts = []
+    active_accounts = [u for u, e in stats["accounts"].items() if e["status"] == "active"]
+
+    print(f"\n--- 参考投稿収集 ({len(active_accounts)}アカウント) ---")
+    for username in active_accounts:
+        _, posts = fetch_account_data(username)
+        for p in posts:
+            all_posts.append({"username": username, **p})
+
+    # いいね数でフィルタ・ソート
+    with_likes = sorted(
+        [p for p in all_posts if p["like_count"] >= MIN_LIKE_REFERENCE],
+        key=lambda x: x["like_count"], reverse=True
+    )
+    selected_texts = [p["text"] for p in with_likes[:40]]
+
+    # like_countが取れない場合は全件
+    if not selected_texts:
+        selected_texts = [p["text"] for p in all_posts]
+
+    # 既存とマージ
     existing = []
-    if os.path.exists(ref_path):
+    if os.path.exists(REF_PATH):
         try:
-            with open(ref_path, encoding="utf-8") as f:
+            with open(REF_PATH, encoding="utf-8") as f:
                 existing = json.load(f)
         except Exception:
-            existing = []
+            pass
 
-    # マージ（重複排除・競合投稿を先頭に配置して学習優先度を上げる）
     existing_set = set(existing)
-    added = [t for t in new_texts if t not in existing_set]
-    combined = added + existing  # 新規を先頭に
-    combined = combined[:MAX_REFERENCE_POSTS]  # 最大件数に制限
+    added = [t for t in selected_texts if t not in existing_set]
+    combined = added + existing
+    combined = combined[:MAX_REFERENCE_POSTS]
 
-    with open(ref_path, "w", encoding="utf-8") as f:
+    with open(REF_PATH, "w", encoding="utf-8") as f:
         json.dump(combined, f, ensure_ascii=False, indent=2)
 
-    print(f"\n✅ 新規追加: {len(added)}件 / 合計: {len(combined)}件 → reference_posts.json 更新完了")
-    return combined
+    print(f"  参考投稿: 新規+{len(added)}件 / 合計{len(combined)}件")
+
+
+# ─── メイン ──────────────────────────────────────────────
+def run():
+    print("\n===== 競合アカウント自動管理 =====")
+    stats = load_stats()
+    active = [u for u, e in stats["accounts"].items() if e["status"] == "active"]
+    print(f"監視中アカウント: {len(active)}件")
+
+    # 1. エンゲージ推移チェック・自動削除
+    print("\n--- エンゲージチェック ---")
+    update_account_stats(stats)
+
+    # 2. Geminiで新規アカウント発見
+    print("\n--- 新規アカウント探索 ---")
+    existing_names = set(stats["accounts"].keys())
+    candidates = discover_new_accounts(existing_names)
+    if candidates:
+        added = validate_and_add_accounts(stats, candidates)
+        if added:
+            print(f"新規追加: {added}")
+
+    # 3. 参考投稿を更新
+    update_reference_posts(stats)
+
+    # 4. 統計を保存
+    save_stats(stats)
+
+    # サマリー表示
+    active_after = [u for u, e in stats["accounts"].items() if e["status"] == "active"]
+    removed_all  = [u for u, e in stats["accounts"].items() if e["status"] == "removed"]
+    print(f"\n✅ 完了 | アクティブ: {len(active_after)}件 | 累計削除: {len(removed_all)}件")
 
 
 if __name__ == "__main__":
-    update_reference_posts()
+    run()
