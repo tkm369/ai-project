@@ -7,7 +7,7 @@ import pytz
 
 from generator import get_best_post, get_time_theme
 from poster import post_to_x, post_to_threads
-from logger import add_post, count_posts_today, get_time_slot_stats, get_image_vs_text_stats, get_length_stats
+from logger import add_post, count_posts_today, get_time_slot_stats, get_image_vs_text_stats, get_length_stats, get_image_style_stats
 from config import AFFILIATE_LINK
 
 MAX_POSTS_PER_DAY = 6
@@ -91,6 +91,41 @@ def decide_post_length():
     target = LENGTH_CATEGORIES[chosen]
     print(f"  [A/B] {reason} ({target}文字目標)")
     return chosen, target
+
+
+def decide_image_style():
+    """画像スタイルをエンゲージデータで判断する
+    - データ不足: 未試験スタイルを優先（全スタイルを均等に探索）
+    - データあり: 1位60% / 2位25% / 3位10% / 4位5%
+    Returns: style_name (str)
+    """
+    from image_gen import ALL_STYLES, STYLES
+    stats = get_image_style_stats()
+    weights_mature = [0.60, 0.25, 0.10, 0.05]
+
+    all_ready = all(stats.get(s, {}).get("count", 0) >= AB_MIN_SAMPLES for s in ALL_STYLES)
+
+    if not all_ready:
+        # 未試験 or 少ないスタイルを優先
+        least = min(ALL_STYLES, key=lambda s: stats.get(s, {}).get("count", 0))
+        counts = {s: stats.get(s, {}).get("count", 0) for s in ALL_STYLES}
+        count_str = " ".join(f"{s}:{counts[s]}" for s in ALL_STYLES)
+        print(f"  [A/B] 画像スタイル探索中 ({count_str}) → {least}: {STYLES[least]['desc']}")
+        return least
+    else:
+        sorted_styles = sorted(ALL_STYLES, key=lambda s: stats[s]["avg_rate"], reverse=True)
+        r = random.random()
+        cumulative = 0
+        chosen = sorted_styles[0]
+        for style, w in zip(sorted_styles, weights_mature):
+            cumulative += w
+            if r < cumulative:
+                chosen = style
+                break
+        rates = {s: stats[s]["avg_rate"] for s in ALL_STYLES}
+        rate_str = " ".join(f"{s}:{rates[s]:.2%}" for s in sorted_styles)
+        print(f"  [A/B] 画像スタイル成熟 ({rate_str}) → {chosen}: {STYLES[chosen]['desc']}")
+        return chosen
 
 
 def decide_use_image():
@@ -179,26 +214,30 @@ def generate_mode():
 
     image_filename = None
     image_url = None
+    image_style = None
     if use_image:
         try:
             from image_gen import create_fortune_image, upload_image
+            image_style = decide_image_style()
             os.makedirs(IMAGES_DIR, exist_ok=True)
             jst = pytz.timezone("Asia/Tokyo")
             ts = datetime.now(jst).strftime("%Y%m%d_%H%M%S")
             image_filename = f"{ts}.png"
             image_path = os.path.join(IMAGES_DIR, image_filename)
-            create_fortune_image(post_content, image_path)
-            print(f"  画像生成: {image_filename}")
+            create_fortune_image(post_content, image_path, style=image_style)
+            print(f"  画像生成: {image_filename} (スタイル: {image_style})")
             image_url = upload_image(image_path)
             if image_url:
                 print(f"  画像URL: {image_url}")
             else:
                 print(f"  ⚠️ アップロード失敗 → テキスト投稿に変更")
                 image_filename = None
+                image_style = None
         except Exception as e:
             print(f"  ⚠️ 画像生成失敗 (テキスト投稿に変更): {e}")
             image_filename = None
             image_url = None
+            image_style = None
     else:
         print(f"  テキストのみで投稿")
 
@@ -209,6 +248,7 @@ def generate_mode():
         "time_slot": time_slot,
         "image_filename": image_filename,
         "image_url": image_url,
+        "image_style": image_style,
         "length_category": length_category,
     })
     print(f"  pending_post.json を保存しました")
@@ -250,10 +290,11 @@ def post_mode():
     has_affiliate = bool(AFFILIATE_LINK)
     has_image = bool(image_filename)
     length_category = pending.get("length_category")
+    image_style = pending.get("image_style")
     if x_id:
-        add_post(x_id, "x", post_content, time_slot, has_affiliate=has_affiliate, has_image=has_image, length_category=length_category)
+        add_post(x_id, "x", post_content, time_slot, has_affiliate=has_affiliate, has_image=has_image, length_category=length_category, image_style=image_style)
     if threads_id:
-        add_post(threads_id, "threads", post_content, time_slot, has_affiliate=has_affiliate, has_image=has_image, length_category=length_category)
+        add_post(threads_id, "threads", post_content, time_slot, has_affiliate=has_affiliate, has_image=has_image, length_category=length_category, image_style=image_style)
 
     # 古い画像を削除
     try:

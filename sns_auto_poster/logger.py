@@ -21,7 +21,7 @@ def save_log(log):
     with open(LOG_FILE, "w", encoding="utf-8") as f:
         json.dump(log, f, ensure_ascii=False, indent=2)
 
-def add_post(post_id, platform, content, time_slot, has_affiliate=False, has_image=False, length_category=None):
+def add_post(post_id, platform, content, time_slot, has_affiliate=False, has_image=False, length_category=None, image_style=None):
     log = load_log()
     jst = pytz.timezone("Asia/Tokyo")
     entry = {
@@ -32,6 +32,7 @@ def add_post(post_id, platform, content, time_slot, has_affiliate=False, has_ima
         "time_slot": time_slot,
         "has_affiliate": has_affiliate,
         "has_image": has_image,
+        "image_style": image_style,
         "length_category": length_category,
         "metrics": None,
         "metrics_collected": False
@@ -92,6 +93,26 @@ def get_length_stats():
     return {
         cat: {"avg_rate": sum(r) / len(r) if r else 0, "count": len(r)}
         for cat, r in data.items()
+    }
+
+
+def get_image_style_stats():
+    """画像スタイル別エンゲージメント率を返す"""
+    from image_gen import ALL_STYLES
+    log = load_log()
+    data = {s: [] for s in ALL_STYLES}
+    for p in log:
+        if not p.get("metrics_collected") or not p.get("metrics"):
+            continue
+        if p.get("platform") != "threads" or not p.get("has_image"):
+            continue
+        rate = p["metrics"].get("engagement_rate", 0)
+        style = p.get("image_style")
+        if style in data:
+            data[style].append(rate)
+    return {
+        s: {"avg_rate": sum(r) / len(r) if r else 0, "count": len(r)}
+        for s, r in data.items()
     }
 
 
