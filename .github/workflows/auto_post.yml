@@ -42,6 +42,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add sns_auto_poster/generated_images/ sns_auto_poster/pending_post.json
           git diff --staged --quiet || git commit -m "chore: auto queue update [skip ci]"
+          git pull --rebase origin master
           git push
 
       - name: 投稿を実行
@@ -61,4 +62,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add sns_auto_poster/posts_log.json
           git diff --staged --quiet || git commit -m "chore: 投稿ログ更新 [skip ci]"
+          git pull --rebase origin master
           git push
