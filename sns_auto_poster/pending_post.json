@@ -1,4 +1,4 @@
 {
   "skip": true,
-  "reason": "本日 6/6 回投稿済み（上限到達）"
+  "reason": "score 7.2 < threshold 50"
 }
