@@ -502,5 +502,19 @@
       "engagement_rate": 0.0
     },
     "metrics_collected": true
+  },
+  {
+    "id": "18099225445819894",
+    "platform": "threads",
+    "timestamp": "2026-04-07T01:28:48.531609+09:00",
+    "content": "深夜、ふと目が覚めたあなた。それはもう偶然じゃない、潜在意識からの緊急メッセージ。\n誰にも言えない不安は、大きなチャンスの前兆かも。この声、あなたはどう読み解く？🌙",
+    "time_slot": "00",
+    "has_affiliate": false,
+    "has_image": false,
+    "image_style": null,
+    "image_content_pattern": null,
+    "length_category": "short",
+    "metrics": null,
+    "metrics_collected": false
   }
 ]
