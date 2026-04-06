@@ -165,6 +165,20 @@ def get_image_vs_text_stats():
     }
 
 
+def get_recent_posts_content(n=7):
+    """直近N件の投稿内容（本文の最初の80文字）を返す（重複防止用）"""
+    log = load_log()
+    threads_posts = [p for p in log if p.get("platform") == "threads" and p.get("content")]
+    recent = threads_posts[-n:]
+    return [p["content"][:80] for p in recent]
+
+
+def get_total_post_count():
+    """累計投稿数を返す（テーマローテーション用）"""
+    log = load_log()
+    return len([p for p in log if p.get("platform") == "threads"])
+
+
 def get_top_posts(n=3, has_affiliate=False):
     """エンゲージメント率が高い上位N件を返す（Threads投稿のみ・同じモードの投稿から学習）"""
     log = load_log()

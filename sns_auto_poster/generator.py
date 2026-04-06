@@ -6,8 +6,24 @@ from datetime import datetime
 import pytz
 from google import genai
 from config import GEMINI_API_KEY, AFFILIATE_LINK, AFFILIATE_TEXT
-from logger import get_top_posts, get_time_slot_performance
+from logger import get_top_posts, get_time_slot_performance, get_recent_posts_content, get_total_post_count
 from trends import load_trends
+
+# 12テーマのローテーション（累計投稿数 % 12 で順番に使い回す）
+_CONTENT_CATEGORIES = [
+    "復縁・別れた相手への未練と向き合い方",
+    "片思い・好きな人の気持ちを読む方法",
+    "運命の人・ソウルメイトとの出会いのサイン",
+    "自己愛・自分を大切にすることで恋愛が変わる",
+    "引き寄せ・願いを現実にするための思考法",
+    "シンクロニシティ・繰り返し見る数字や出来事の意味",
+    "別れと新しい始まり・前に進む勇気",
+    "潜在意識・直感が教える本当の気持ち",
+    "恋愛の不安と孤独・癒しのメッセージ",
+    "開運・今すぐできる運気を上げる行動",
+    "相手の本音・行動の裏に隠れた気持ち",
+    "自分の魅力・まだ気づいていない内側の輝き",
+]
 
 # スパム防止：CTAをローテーションして毎回同じにならないようにする
 _CTA_OPTIONS = [
@@ -191,28 +207,43 @@ def generate_and_score_posts(platform="x", top_posts=None, target_chars=None):
     jst = pytz.timezone("Asia/Tokyo")
     today_str = datetime.now(jst).strftime("%Y年%m月%d日")
 
+    # テーマローテーション（累計投稿数で順番に切り替え）
+    total = get_total_post_count()
+    assigned_category = _CONTENT_CATEGORIES[total % len(_CONTENT_CATEGORIES)]
+
+    # 直近の投稿を取得して重複回避指示に使う
+    recent_contents = get_recent_posts_content(n=7)
+    recent_section = ""
+    if recent_contents:
+        lines = ["【直近の投稿（これらと似た内容・書き出し・構成を使うことを厳禁）】"]
+        for c in recent_contents:
+            lines.append(f"・{c}…")
+        recent_section = "\n" + "\n".join(lines) + "\n"
+
     if AFFILIATE_LINK:
         cta_instruction = f'- 最後に「{AFFILIATE_TEXT} {AFFILIATE_LINK}」を自然に含める'
     else:
         cta_instruction = f'- 末尾は必ずこのCTAで締める（変更厳禁）:「{chosen_cta}」\n- URLもリンクもプレースホルダーも絶対に入れない'
 
     prompt = f"""あなたはフォロワーを惹きつける人気SNS占い師です。
-今日は{today_str}です。「{theme}」というテーマで、{platform}用の投稿を3案作成し、各案のエンゲージメントスコア(0-100)を付けてください。
-{reference_section}{top_posts_section}{time_perf_section}{hashtag_section}{trends_section}
+今日は{today_str}です。
+今回のテーマ：「{assigned_category}」（時間帯の雰囲気：{theme}）
+{platform}用の投稿を3案作成し、各案のエンゲージメントスコア(0-100)を付けてください。
+{recent_section}{reference_section}{top_posts_section}{time_perf_section}{hashtag_section}{trends_section}
 【投稿必須条件】
-- 占い・スピリチュアル・恋愛運に関する内容
+- テーマ「{assigned_category}」に沿った内容にする
 - 1行目で読者がスクロールを止めるような「フック」を入れる
 - 読者が「自分のことだ」と感じる共感ワードを使う
-- 3案それぞれ、書き出し・構成・テーマを完全に変えて多様性を持たせる
+- 3案それぞれ、書き出し・構成・アプローチを完全に変える
 {cta_instruction}
 - {max_chars}文字以内
 - 絵文字を効果的に使う（多すぎない）
 - ハッシュタグは一切入れない
 
-【スパム防止条件（厳守）】
-- 3案とも異なるアプローチ・異なる言い回しにする
+【コンテンツ多様性条件（最重要）】
+- 直近の投稿リストと同じ書き出し・同じ構成・同じテーマを絶対に使わない
 - 「コメントで教えてください」「コメントで教えてくださいね」は絶対に使わない
-- 毎回同じパターンにならないよう、今日ならではの切り口で書く
+- 3案それぞれ異なる感情・角度・切り口で書く（同じトーンで3案書かない）
 
 【NG条件（必ず守ること）】
 - 実在の芸能人・著名人・一般人の名前を出さない
