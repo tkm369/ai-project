@@ -1,5 +1,6 @@
 import json
 import os
+import random
 import time
 from datetime import datetime
 import pytz
@@ -7,6 +8,22 @@ from google import genai
 from config import GEMINI_API_KEY, AFFILIATE_LINK, AFFILIATE_TEXT
 from logger import get_top_posts, get_time_slot_performance
 from trends import load_trends
+
+# スパム防止：CTAをローテーションして毎回同じにならないようにする
+_CTA_OPTIONS = [
+    "あなたにもこんな経験、ありますか？",
+    "この感覚、わかる人いますか？",
+    "今のあなたに当てはまりましたか？",
+    "保存しておいて、また読み返してみてね。",
+    "この言葉、誰かに届いてほしい。",
+    "どう感じましたか？",
+    "あなたの話、聞かせてほしいな。",
+    "共感したらいいねしてもらえると嬉しいです。",
+    "今夜、ゆっくり考えてみてください。",
+    "このメッセージ、あなたへのものかもしれません。",
+    "あなたは今、どんな気持ちですか？",
+    "心に響いたら、保存しておいてね。",
+]
 
 _client = None
 
@@ -169,22 +186,33 @@ def generate_and_score_posts(platform="x", top_posts=None, target_chars=None):
         lines.append("※ 無理に全部入れず、自然に絡められるものだけ使うこと")
         trends_section = "\n" + "\n".join(lines) + "\n"
 
+    # CTAをランダムに選んで毎回変える（スパム防止）
+    chosen_cta = random.choice(_CTA_OPTIONS)
+    jst = pytz.timezone("Asia/Tokyo")
+    today_str = datetime.now(jst).strftime("%Y年%m月%d日")
+
     if AFFILIATE_LINK:
         cta_instruction = f'- 最後に「{AFFILIATE_TEXT} {AFFILIATE_LINK}」を自然に含める'
     else:
-        cta_instruction = "- 末尾にCTAやプロフ誘導は入れない。代わりに「あなたはどうですか？」「コメントで教えて」など読者が反応したくなる一言で締める（URLもリンクもプレースホルダーも絶対に入れない）"
+        cta_instruction = f'- 末尾は必ずこのCTAで締める（変更厳禁）:「{chosen_cta}」\n- URLもリンクもプレースホルダーも絶対に入れない'
 
     prompt = f"""あなたはフォロワーを惹きつける人気SNS占い師です。
-「{theme}」というテーマで、{platform}用の投稿を3案作成し、各案のエンゲージメントスコア(0-100)を付けてください。
+今日は{today_str}です。「{theme}」というテーマで、{platform}用の投稿を3案作成し、各案のエンゲージメントスコア(0-100)を付けてください。
 {reference_section}{top_posts_section}{time_perf_section}{hashtag_section}{trends_section}
 【投稿必須条件】
 - 占い・スピリチュアル・恋愛運に関する内容
 - 1行目で読者がスクロールを止めるような「フック」を入れる
 - 読者が「自分のことだ」と感じる共感ワードを使う
+- 3案それぞれ、書き出し・構成・テーマを完全に変えて多様性を持たせる
 {cta_instruction}
 - {max_chars}文字以内
 - 絵文字を効果的に使う（多すぎない）
 - ハッシュタグは一切入れない
+
+【スパム防止条件（厳守）】
+- 3案とも異なるアプローチ・異なる言い回しにする
+- 「コメントで教えてください」「コメントで教えてくださいね」は絶対に使わない
+- 毎回同じパターンにならないよう、今日ならではの切り口で書く
 
 【NG条件（必ず守ること）】
 - 実在の芸能人・著名人・一般人の名前を出さない
@@ -225,10 +253,11 @@ def improve_post(post, platform="x", target_chars=None):
     else:
         max_chars = 400
 
+    chosen_cta = random.choice(_CTA_OPTIONS)
     if AFFILIATE_LINK:
         cta_improve = "- CTAのアフィリリンクへの誘導をより自然で背中を押す表現にする"
     else:
-        cta_improve = "- CTAやプロフ誘導は入れない。末尾を「あなたはどう？」「コメントで教えて」など読者が反応・保存したくなる締め方に変える（URLもリンクもプレースホルダーも絶対に入れない）"
+        cta_improve = f'- 末尾のCTAは必ず「{chosen_cta}」にする（他の表現に変えない）\n- URLもリンクもプレースホルダーも「コメントで教えてください」も絶対に入れない'
 
     prompt = f"""以下のSNS占い投稿をより魅力的に改善してください。
 

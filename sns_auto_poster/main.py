@@ -10,7 +10,7 @@ from poster import post_to_x, post_to_threads
 from logger import add_post, count_posts_today, get_time_slot_stats, get_image_vs_text_stats, get_length_stats, get_image_style_stats, get_image_content_stats
 from config import AFFILIATE_LINK
 
-MAX_POSTS_PER_DAY = 6
+MAX_POSTS_PER_DAY = 3  # スパム防止のため1日3件に制限
 MIN_DATA_POINTS = 5
 SCORE_THRESHOLD = 50   # これ未満のスコアは投稿スキップ
 AB_MIN_SAMPLES = 5     # 画像/テキスト各タイプのA/B判定に必要な最低サンプル数

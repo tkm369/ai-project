@@ -5,8 +5,9 @@ permissions:
 
 "on":
   schedule:
-    - cron: '0 */2 * * *'  # 2時間ごとに起動（JST換算: 1,3,5,7,9,11,13,15,17,19,21,23時）
-    # Pythonスクリプト側でPDCAデータに基づき投稿するか判断（最大6回/日）
+    - cron: '0 0 * * *'   # JST 9:00（スパム防止: 1日3回に制限）
+    - cron: '0 7 * * *'   # JST 16:00
+    - cron: '0 12 * * *'  # JST 21:00
   workflow_dispatch:        # GitHub上から手動実行も可能
 
 jobs:
@@ -15,6 +16,9 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      - name: ランダム遅延（Bot判定回避：0〜29分のランダム待機）
+        run: sleep $((RANDOM % 1740))
+
       - name: リポジトリをチェックアウト
         uses: actions/checkout@v4
 
