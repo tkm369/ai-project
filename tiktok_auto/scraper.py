@@ -77,14 +77,38 @@ def screenshot_x_post(url: str) -> str:
     return save_path
 
 
+SCREENSHOT_TIMEOUT = 60  # スクショ取得の全体タイムアウト（秒）
+
+
 def screenshot_threads_post(url: str) -> str:
     """
     Threads の投稿URLからスクリーンショットを取得。
     戻り値: 保存したPNGのパス
     """
+    import threading
+
     post_id = url.rstrip("/").split("/")[-1]
     save_path = _save_path("threads", post_id)
+    result = [save_path]
+    error = [None]
 
+    def _do():
+        try:
+            result[0] = _screenshot_threads_inner(url, save_path)
+        except Exception as e:
+            error[0] = e
+
+    t = threading.Thread(target=_do)
+    t.start()
+    t.join(timeout=SCREENSHOT_TIMEOUT)
+    if t.is_alive():
+        raise RuntimeError(f"スクショ取得が{SCREENSHOT_TIMEOUT}秒でタイムアウト: {url}")
+    if error[0]:
+        raise error[0]
+    return result[0]
+
+
+def _screenshot_threads_inner(url: str, save_path: str) -> str:
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
