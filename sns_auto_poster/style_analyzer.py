@@ -61,10 +61,23 @@ def analyze_image_style(image_url, post_text=""):
 
         client = genai.Client(api_key=GEMINI_API_KEY)
 
-        prompt = """この画像はThreadsの占い・スピリチュアル・復縁ジャンルの人気投稿画像です。
-デザインの特徴を以下のJSON形式で分析してください（説明文不要、JSONのみ返す）:
+        prompt = """この画像はThreadsの占い・スピリチュアル・復縁ジャンルの投稿画像です。
+まず最初に、この画像が「スキップすべき画像」かどうかを判定してください。
+
+スキップすべき画像の条件（1つでも当てはまればskip: true）:
+- 商品・サービスの宣伝・販売訴求（価格表示、「詳しくはこちら」など）
+- アカウント固有のロゴ・名前・URLが大きく入っている（ブランディング画像）
+- プロフィール紹介・自己紹介カード
+- 予約・申し込みの告知バナー
+- 特定の人物の顔写真がメインで占めている（スピリチュアル感がない）
+
+上記に該当しない「純粋なコンテンツ投稿画像」のみデザイン分析してください。
+
+以下のJSON形式で返してください（説明文不要、JSONのみ）:
 
 {
+  "skip": true_or_false,
+  "skip_reason": "スキップする場合の理由（該当しない場合はnull）",
   "background_type": "gradient|solid_dark|solid_light|real_photo|ai_art|abstract_art",
   "dominant_colors": ["#色1", "#色2", "#色3"],
   "text_color": "#色",
@@ -188,13 +201,22 @@ def run(competitor_stats):
 
             print(f"    分析中 (likes={post.get('like_count', 0)})...")
             style = analyze_image_style(url, post.get("text", ""))
-            if style:
-                style["like_count"] = post.get("like_count", 0)
-                style["username"] = username
-                guide["styles"].append(style)
-                existing_urls.add(url)
-                analyzed_count += 1
-                print(f"    ✅ {style.get('atmosphere')} / {style.get('background_type')} / score={style.get('overall_quality_score')}")
+            if not style:
+                continue
+
+            # 商品宣伝・アカウントブランディング画像をスキップ
+            if style.get("skip"):
+                reason = style.get("skip_reason", "不明")
+                print(f"    ⏭️  スキップ: {reason}")
+                existing_urls.add(url)  # 再分析しないようURLは記録
+                continue
+
+            style["like_count"] = post.get("like_count", 0)
+            style["username"] = username
+            guide["styles"].append(style)
+            existing_urls.add(url)
+            analyzed_count += 1
+            print(f"    ✅ {style.get('atmosphere')} / {style.get('background_type')} / score={style.get('overall_quality_score')}")
 
             time.sleep(13)  # Gemini API レート制限 (5RPM)
 
