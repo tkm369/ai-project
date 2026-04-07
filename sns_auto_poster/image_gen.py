@@ -316,31 +316,92 @@ def load_style_guide_summary():
         return None
 
 
+def load_style_guide_top_patterns():
+    """style_guide.jsonから高スコアのパターンを最大3件返す"""
+    path = os.path.join(os.path.dirname(__file__), "style_guide.json")
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        styles = data.get("styles", [])
+        # スコア7以上・スキップなし・いいね数順
+        good = [s for s in styles
+                if not s.get("skip")
+                and s.get("overall_quality_score", 0) >= 7]
+        good.sort(key=lambda s: s.get("like_count", 0), reverse=True)
+        return good[:3]
+    except Exception:
+        return []
+
+
+def build_dynamic_prompt(post_text, style_patterns):
+    """
+    競合分析パターンとGeminiを使って
+    Pollinations.ai用の画像プロンプトを動的に生成する
+    """
+    from config import GEMINI_API_KEY
+    if not GEMINI_API_KEY or not style_patterns:
+        return None
+    try:
+        from google import genai
+        client = genai.Client(api_key=GEMINI_API_KEY)
+
+        # 参考パターンをまとめる
+        pattern_desc = []
+        for p in style_patterns:
+            parts = []
+            if p.get("background_type"):
+                parts.append(f"背景:{p['background_type']}")
+            if p.get("atmosphere"):
+                parts.append(f"雰囲気:{p['atmosphere']}")
+            if p.get("key_visual_elements"):
+                parts.append(f"要素:{','.join(p['key_visual_elements'][:3])}")
+            if p.get("dominant_colors"):
+                parts.append(f"色:{','.join(p['dominant_colors'][:2])}")
+            pattern_desc.append(" / ".join(parts))
+
+        prompt = f"""以下の条件でThreads投稿用の背景画像のプロンプトを英語で作成してください。
+
+【参考にする人気投稿のビジュアルパターン】
+{chr(10).join(f'- {d}' for d in pattern_desc)}
+
+【投稿内容（テーマの参考に）】
+{post_text[:100]}
+
+【条件】
+- Pollinations.ai（Stable Diffusion系）に渡す英語プロンプト
+- 人物を含む場合は美しい日本人女性または東洋系女性
+- テキストや文字は含めない（no text, no watermark必須）
+- 1080x1080の正方形に映える構図
+- 占い・スピリチュアル・恋愛の雰囲気に合うもの
+- 高品質・シネマティックな仕上がり
+
+プロンプト文字列のみ返してください（説明不要）:"""
+
+        import time
+        time.sleep(13)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash", contents=prompt)
+        generated_prompt = response.text.strip()
+        # 余計な引用符を除去
+        generated_prompt = generated_prompt.strip('"\'')
+        print(f"  動的プロンプト生成: {generated_prompt[:80]}...")
+        return generated_prompt
+    except Exception as e:
+        print(f"  動的プロンプト生成失敗: {e}")
+        return None
+
+
 def get_recommended_style():
     """
-    style_guide.jsonの分析結果から推奨スタイルを返す
-    データがなければgradient_purpleを返す
+    style_guide.jsonのデータが十分なら動的生成モードを示す文字列を返す
+    データが不足している場合はNone（通常A/Bテストに任せる）
     """
     summary = load_style_guide_summary()
     if not summary or summary.get("total_analyzed", 0) < 3:
-        return None  # データ不足→通常のA/Bテストに任せる
-
-    bg = summary.get("top_background_type", "")
-    atm = summary.get("top_atmosphere", "")
-    has_person_rate = summary.get("has_person_rate", 0)
-
-    # 分析結果からスタイルをマッピング
-    if has_person_rate > 0.5:
-        return "ai_goddess"
-    if "cosmic" in atm or bg == "ai_art":
-        return "ai_cosmic"
-    if "dark" in atm or bg == "solid_dark":
-        return "gradient_dark"
-    if "warm" in atm or "emotional" in atm:
-        return "ai_emotional"
-    if "dreamy" in atm or "romantic" in atm:
-        return "gradient_purple"
-    return None
+        return None
+    return "dynamic"  # 動的プロンプト生成モード
 
 
 def create_fortune_image(post_text, output_path,
@@ -352,10 +413,27 @@ def create_fortune_image(post_text, output_path,
         content_pattern = "hook"
 
     # ─ 背景生成 ─
+    # 動的モード: 競合分析パターンからGeminiがプロンプトを生成
+    dynamic_img = None
+    if style == "dynamic":
+        patterns = load_style_guide_top_patterns()
+        if patterns:
+            dynamic_prompt = build_dynamic_prompt(post_text, patterns)
+            if dynamic_prompt:
+                print(f"  競合スタイル学習画像を生成中...")
+                dynamic_img = _fetch_ai_background(dynamic_prompt)
+        if dynamic_img is None:
+            print(f"  動的生成失敗 → ai_goddessにフォールバック")
+        style = "ai_goddess"  # 動的生成のオーバーレイ設定用
+
     is_ai = style in AI_STYLES
     s = STYLES[style]
 
-    if is_ai:
+    if dynamic_img is not None:
+        # 動的生成成功: そのまま使う
+        img = dynamic_img
+        is_ai = True
+    elif is_ai:
         print(f"  AI画像生成中... ({s['desc']})")
         img = _fetch_ai_background(s["prompt"])
         if img is None:

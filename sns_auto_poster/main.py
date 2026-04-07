@@ -114,11 +114,11 @@ def decide_image_style():
     stats = get_image_style_stats()
     weights_mature = [0.60, 0.25, 0.10, 0.05]
 
-    # 競合分析データがあれば推奨スタイルを70%の確率で使う
+    # 競合分析データが十分なら動的プロンプト生成を70%の確率で使う
     recommended = get_recommended_style()
-    if recommended and random.random() < 0.70:
-        print(f"  [スタイル] 競合分析推奨: {recommended} ({STYLES[recommended]['desc']})")
-        return recommended
+    if recommended == "dynamic" and random.random() < 0.70:
+        print(f"  [スタイル] 競合分析から動的プロンプトで画像生成")
+        return "dynamic"
 
     all_ready = all(stats.get(s, {}).get("count", 0) >= AB_MIN_SAMPLES for s in ALL_STYLES)
 
