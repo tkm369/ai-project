@@ -100,7 +100,7 @@ def compose_video(
     if bg_files:
         bg_path = os.path.join(config.BACKGROUNDS_DIR, random.choice(bg_files))
         logger.info(f"背景動画: {bg_path}")
-        bg_clip = VideoFileClip(bg_path)
+        bg_clip = VideoFileClip(bg_path, audio=False)
         if bg_clip.duration < duration:
             bg_clip = bg_clip.with_effects([Loop(duration=duration)])
         else:
