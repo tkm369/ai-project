@@ -54,7 +54,48 @@ def improve_text(original_text: str) -> str:
         return original_text
 
 
+def is_valid_post(text: str) -> bool:
+    """
+    Geminiで投稿テキストが恋愛・復縁ジャンルとして適切かを判定。
+    APIキーがない場合はTrue（スキップしない）を返す。
+    """
+    if not GEMINI_API_KEY:
+        return True
+
+    prompt = f"""以下のテキストを読んで、TikTokに投稿するコンテンツとして適切かどうか判定してください。
+
+判定基準：
+- 恋愛・復縁・占い・スピリチュアル・感情に関する日本語の投稿 → OK
+- 意味不明・断片的・ユーザー名・英数字のみ・無関係なジャンル → NG
+
+テキスト：
+{text[:200]}
+
+OKまたはNGの1単語だけ返してください。"""
+
+    body = json.dumps({
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"maxOutputTokens": 5, "temperature": 0.1}
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"{GEMINI_URL}?key={GEMINI_API_KEY}",
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as res:
+            data = json.loads(res.read())
+            result = data["candidates"][0]["content"]["parts"][0]["text"].strip().upper()
+            return "OK" in result
+    except Exception:
+        return True  # エラー時はスキップしない
+
+
 if __name__ == "__main__":
     sample = "自己中じゃ表しきれない無責任自己中な彼にムカついている。"
     print("元:", sample)
     print("改良:", improve_text(sample))
+    print("判定:", is_valid_post(sample))

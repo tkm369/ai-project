@@ -28,7 +28,7 @@ import schedule
 import config
 from scraper import screenshot_post, extract_text_from_post
 from card_generator import generate_card
-from text_improver import improve_text
+from text_improver import improve_text, is_valid_post
 from composer import compose_video
 from uploader import upload_to_tiktok
 
@@ -134,6 +134,12 @@ def run_post_job():
         _t = _time.time()
         post_text = extract_text_from_post(url)
         logger.info(f"【元テキスト】{post_text}")
+
+        if not is_valid_post(post_text):
+            logger.warning(f"Gemini判定NG: 不適切なテキストのためスキップ → {post_text[:50]}")
+            mark_done(url, status="skipped")
+            return
+
         improved_text = improve_text(post_text)
         logger.info(f"【改良後テキスト】{improved_text}")
         timestamp_card = datetime.now().strftime("%Y%m%d_%H%M%S")
