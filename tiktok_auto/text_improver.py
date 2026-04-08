@@ -25,16 +25,17 @@ def improve_text(original_text: str) -> str:
 - 元のテキストの意味を変えない
 - 文体・口調はそのまま
 - 読みやすく自然な日本語に整える
-- 100文字以内に収める
+- 必ず文章を最後まで完結させること（途中で切らない）
+- 150文字程度を目安にする
 - 改行は適切に入れる
 - 改良後のテキストだけを返す（説明不要）
 
 元のテキスト：
-{original_text[:300]}"""
+{original_text[:400]}"""
 
     body = json.dumps({
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"maxOutputTokens": 200, "temperature": 0.7}
+        "generationConfig": {"maxOutputTokens": 400, "temperature": 0.7}
     }).encode("utf-8")
 
     req = urllib.request.Request(

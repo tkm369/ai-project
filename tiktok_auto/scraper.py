@@ -137,11 +137,12 @@ def extract_text_from_post(url: str) -> str:
             text=True,
         )
         output = result.stdout.strip()
-        for line in output.splitlines():
-            if line.startswith("TEXT:"):
-                text = line[5:].strip()
-                logger.info(f"[Threads] テキスト取得: {text[:50]}...")
-                return text
+        # TEXT: 以降の全テキストを取得（改行含む投稿に対応）
+        if "TEXT:" in output:
+            idx = output.index("TEXT:")
+            text = output[idx + 5:].strip()
+            logger.info(f"[Threads] テキスト取得: {text[:50]}...")
+            return text
         raise RuntimeError(f"テキスト取得失敗: {output or result.stderr.strip()}")
     except subprocess.TimeoutExpired:
         raise RuntimeError(f"テキスト取得タイムアウト: {url}")

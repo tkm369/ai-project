@@ -59,15 +59,17 @@ def extract_text(url: str) -> str:
                 texts = page.evaluate("""() => {
                     const spans = document.querySelectorAll("span[dir='auto']");
                     return Array.from(spans)
-                        .map(s => s.innerText.trim())
+                        .map(s => {
+                            let t = s.innerText.trim();
+                            // 末尾の "Translate" や "Related" を削除
+                            t = t.replace(/\\s*\\n?Translate\\s*$/, '').replace(/\\s*\\n?Related\\s*$/, '').trim();
+                            return t;
+                        })
                         .filter(t => {
                             if (t.length < 10) return false;
-                            if (t.includes('Translate') || t.includes('Related')) return false;
-                            // ユーザー名除外: スペースなし かつ アンダースコア含む or 英数字のみ
-                            const hasSpace = t.includes(' ') || t.includes('\n');
-                            const hasJapanese = /[\u3000-\u9fff]/.test(t);
-                            const isUsername = !hasSpace && !hasJapanese && t.length < 50;
-                            if (isUsername) return false;
+                            // 日本語が含まれているものだけを対象にする
+                            const hasJapanese = /[\\u3040-\\u9fff]/.test(t);
+                            if (!hasJapanese) return false;
                             return true;
                         });
                 }""")
