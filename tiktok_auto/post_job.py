@@ -1,7 +1,7 @@
 """
 post_job.py - タスクスケジューラから呼ばれる1投稿スクリプト
 """
-import sys, os
+import sys, os, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import logging
@@ -16,12 +16,17 @@ logging.basicConfig(
         logging.StreamHandler(),
     ]
 )
+logger = logging.getLogger(__name__)
 
 from fetcher import fetch_and_enqueue
 from scheduler import run_post_job
 
-# 1) X/Threads の新着を自動取得してキューに追加
+logger.info("=== STEP1: fetch_and_enqueue 開始 ===")
+t0 = time.time()
 fetch_and_enqueue()
+logger.info(f"=== STEP1完了: {time.time()-t0:.1f}秒 ===")
 
-# 2) キューから1件処理してTikTokに投稿
+logger.info("=== STEP2: run_post_job 開始 ===")
+t1 = time.time()
 run_post_job()
+logger.info(f"=== STEP2完了: {time.time()-t1:.1f}秒 ===")

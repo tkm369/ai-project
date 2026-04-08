@@ -124,20 +124,28 @@ def run_post_job():
     logger.info(f"=== 投稿開始: {url} ===")
 
     try:
+        import time as _time
+
         # 1) スクリーンショット取得
         logger.info("1/3 スクリーンショット取得中...")
+        _t = _time.time()
         ss_path = screenshot_post(url)
+        logger.info(f"1/3完了: {_time.time()-_t:.1f}秒")
 
         # 2) 動画合成
         logger.info("2/3 動画合成中...")
+        _t = _time.time()
         timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_path = os.path.join(config.OUTPUT_DIR, f"tiktok_{timestamp}.mp4")
         caption     = build_caption(item)
         compose_video(ss_path, output_path, caption_text=caption, duration=15.0)
+        logger.info(f"2/3完了: {_time.time()-_t:.1f}秒")
 
         # 3) TikTokアップロード
         logger.info("3/3 TikTokにアップロード中...")
+        _t = _time.time()
         ok = upload_to_tiktok(output_path, caption)
+        logger.info(f"3/3完了: {_time.time()-_t:.1f}秒 ok={ok}")
 
         if ok:
             mark_item(url, "done")
