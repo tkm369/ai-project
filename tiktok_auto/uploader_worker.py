@@ -9,6 +9,9 @@ import json
 import time
 import subprocess
 
+# Windows環境でUTF-8出力を強制（\xa0などの文字でクラッシュしないよう）
+sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', errors='replace', buffering=1)
+
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 DEBUG_PROFILE = r"C:\tiktok_debug_profile"
 CDP_PORT = 9223

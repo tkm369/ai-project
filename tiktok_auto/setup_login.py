@@ -11,7 +11,7 @@ setup_login.py - TikTokに一度だけログインしてセッションを保存
 import os
 from playwright.sync_api import sync_playwright
 
-PROFILE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "browser_profile")
+PROFILE_DIR = os.environ.get("TIKTOK_PROFILE_DIR", r"C:\tiktok_profile")
 
 def main():
     print("=" * 50)
