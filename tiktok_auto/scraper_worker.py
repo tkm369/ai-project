@@ -57,25 +57,25 @@ def extract_text(url: str) -> str:
             text = ""
             try:
                 texts = page.evaluate("""() => {
-                    const spans = document.querySelectorAll("span[dir='auto']");
+                    // 最初のarticle要素内のspanだけを対象にする（本文エリア）
+                    const article = document.querySelector('article');
+                    const container = article || document;
+                    const spans = container.querySelectorAll("span[dir='auto']");
                     return Array.from(spans)
                         .map(s => {
                             let t = s.innerText.trim();
-                            // 末尾の "Translate" や "Related" を削除
                             t = t.replace(/\\s*\\n?Translate\\s*$/, '').replace(/\\s*\\n?Related\\s*$/, '').trim();
                             return t;
                         })
                         .filter(t => {
                             if (t.length < 10) return false;
-                            // 日本語が含まれているものだけを対象にする
                             const hasJapanese = /[\\u3040-\\u9fff]/.test(t);
                             if (!hasJapanese) return false;
                             return true;
                         });
                 }""")
                 if texts:
-                    # 最も長いテキストをメイン投稿とみなす（リプより本文の方が長い傾向）
-                    text = max(texts, key=len)
+                    text = texts[0]  # article内の最初の日本語テキスト＝本文
             except Exception:
                 pass
 
