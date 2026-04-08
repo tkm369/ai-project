@@ -146,6 +146,7 @@ def run(video_path: str, caption: str):
                     break
 
             # 投稿ボタンをクリック
+            clicked = False
             for sel in [
                 '[data-e2e="post_video_button"]',
                 '[data-e2e="post-video-button"]',
@@ -154,15 +155,38 @@ def run(video_path: str, caption: str):
                 try:
                     btn = page.locator(sel).first
                     btn.wait_for(state="visible", timeout=3000)
+                    btn_text = btn.inner_text()
+                    print(f"INFO:投稿ボタン発見 ({sel}): '{btn_text}'", flush=True)
                     btn.click()
-                    time.sleep(10)
-                    print("OK:投稿完了", flush=True)
-                    return
+                    clicked = True
+                    break
                 except Exception:
                     continue
 
-            print("ERROR:投稿ボタンが見つかりませんでした", flush=True)
-            sys.exit(1)
+            if not clicked:
+                print("ERROR:投稿ボタンが見つかりませんでした", flush=True)
+                sys.exit(1)
+
+            # 投稿成功を確認（URLが変わるか成功メッセージが出るまで最大30秒待つ）
+            url_before = page.url
+            for i in range(30):
+                time.sleep(1)
+                url_now = page.url
+                # URLが変わったら成功
+                if url_now != url_before and "upload" not in url_now:
+                    print(f"OK:投稿完了 (URL: {url_now})", flush=True)
+                    return
+                # エラーメッセージを検出
+                error_text = page.evaluate("""() => {
+                    const els = document.querySelectorAll('[class*="error"],[class*="Error"],[role="alert"]');
+                    return Array.from(els).map(e => e.innerText).filter(t => t.trim()).join(' | ');
+                }""")
+                if error_text:
+                    print(f"ERROR:TikTokエラー: {error_text[:200]}", flush=True)
+                    sys.exit(1)
+
+            # タイムアウト：URLは変わらなかったが投稿された可能性あり
+            print(f"OK:投稿ボタンクリック完了（URL未変化）", flush=True)
 
     except Exception as e:
         print(f"ERROR:{e}", flush=True)
