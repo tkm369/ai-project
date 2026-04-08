@@ -40,13 +40,46 @@ def kill_port(port):
         pass
 
 
+def kill_chrome_holding_profile(profile_dir):
+    """tiktok_debug_profileを掴んでいるChromeプロセスを強制終了"""
+    try:
+        result = subprocess.run(
+            ["wmic", "process", "where", f"CommandLine like '%{profile_dir}%'", "get", "ProcessId", "/format:list"],
+            capture_output=True, text=True, timeout=10
+        )
+        for line in result.stdout.splitlines():
+            if line.startswith("ProcessId="):
+                pid = line.split("=")[1].strip()
+                if pid:
+                    subprocess.run(["taskkill", "/F", "/PID", pid], timeout=5)
+                    print(f"INFO:Chrome PID {pid} を終了しました", flush=True)
+        time.sleep(2)
+    except Exception as e:
+        print(f"INFO:Chrome終了試行: {e}", flush=True)
+
+
+def release_profile_lock(profile_dir):
+    """ChromeプロファイルのSingletonLockファイルを削除"""
+    import pathlib
+    for lock_name in ["SingletonLock", "SingletonCookie", "SingletonSocket"]:
+        lock_path = pathlib.Path(profile_dir) / lock_name
+        try:
+            if lock_path.exists():
+                lock_path.unlink()
+                print(f"INFO:{lock_name} 削除完了", flush=True)
+        except Exception as e:
+            print(f"INFO:{lock_name} 削除失敗: {e}", flush=True)
+
+
 def run(video_path: str, caption: str):
     cookies = get_cookies()
     if not any(c["name"] == "sessionid" for c in cookies):
         print("ERROR:TIKTOK_SESSION_ID未設定", flush=True)
         sys.exit(1)
 
+    kill_chrome_holding_profile(DEBUG_PROFILE)
     kill_port(CDP_PORT)
+    release_profile_lock(DEBUG_PROFILE)
 
     chrome_proc = subprocess.Popen([
         CHROME_PATH,
