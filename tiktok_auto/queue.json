@@ -85,7 +85,8 @@
     "url": "https://www.threads.net/post/DWqqcIgge3T",
     "caption_override": "",
     "added_at": "2026-04-08T10:14:57.183346",
-    "status": "pending"
+    "status": "done",
+    "processed_at": "2026-04-08T19:36:36.761778"
   },
   {
     "url": "https://www.threads.net/post/DVYFHCNCR6r",
@@ -277,6 +278,24 @@
     "url": "https://www.threads.net/post/DW3MwSEkgJ4",
     "caption_override": "",
     "added_at": "2026-04-08T19:29:28.977222",
+    "status": "pending"
+  },
+  {
+    "url": "https://www.threads.net/post/DW2xozrgZYN",
+    "caption_override": "",
+    "added_at": "2026-04-08T19:34:35.675667",
+    "status": "pending"
+  },
+  {
+    "url": "https://www.threads.net/post/DTKr-kWAdA3",
+    "caption_override": "",
+    "added_at": "2026-04-08T19:34:35.675667",
+    "status": "pending"
+  },
+  {
+    "url": "https://www.threads.net/post/DLjwkNuysoM",
+    "caption_override": "",
+    "added_at": "2026-04-08T19:34:35.675667",
     "status": "pending"
   }
 ]
