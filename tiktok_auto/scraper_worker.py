@@ -74,7 +74,8 @@ def extract_text(url: str) -> str:
                         });
                 }""")
                 if texts:
-                    text = texts[0]  # 最初の有効なテキスト
+                    # 最も長いテキストをメイン投稿とみなす（リプより本文の方が長い傾向）
+                    text = max(texts, key=len)
             except Exception:
                 pass
 
