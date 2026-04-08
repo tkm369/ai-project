@@ -53,22 +53,19 @@ def extract_text(url: str) -> str:
             time.sleep(3)
             dismiss_overlays(page)
 
-            # テキスト抽出を試みる
+            # テキスト抽出 (JavaScript で dir=auto のspan要素から取得)
             text = ""
-            for sel in [
-                'article [data-pressable-container] span',
-                'article span[dir="auto"]',
-                'div[data-pressable-container] span',
-                'span[dir="auto"]',
-            ]:
-                try:
-                    els = page.locator(sel).all()
-                    parts = [el.inner_text().strip() for el in els if el.inner_text().strip()]
-                    if parts:
-                        text = "\n".join(parts[:5])  # 最初の5要素
-                        break
-                except Exception:
-                    continue
+            try:
+                texts = page.evaluate("""() => {
+                    const spans = document.querySelectorAll("span[dir='auto']");
+                    return Array.from(spans)
+                        .map(s => s.innerText.trim())
+                        .filter(t => t.length > 15 && !t.includes('Translate') && !t.includes('Related'));
+                }""")
+                if texts:
+                    text = texts[0]  # 最初の有効なテキスト
+            except Exception:
+                pass
 
             if text:
                 print(f"TEXT:{text}", flush=True)

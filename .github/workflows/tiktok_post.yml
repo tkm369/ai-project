@@ -10,7 +10,7 @@ on:
 jobs:
   post:
     runs-on: self-hosted   # 自分のPCで実行（住宅IP）
-    timeout-minutes: 10    # 10分でジョブ全体を強制終了
+    timeout-minutes: 20    # 20分でジョブ全体を強制終了
     permissions:
       contents: write
 
