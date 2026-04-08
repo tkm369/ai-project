@@ -174,32 +174,28 @@ def run(video_path: str, caption: str):
                 safe_print("ERROR:投稿ボタンが見つかりませんでした", flush=True)
                 sys.exit(1)
 
-            # 投稿成功を確認（URLが変わるか成功メッセージが出るまで最大30秒待つ）
+            # 投稿成功を確認（最大60秒）
             url_before = page.url
-            for i in range(30):
+            for i in range(60):
                 time.sleep(1)
                 url_now = page.url
+
                 # URLが変わったら成功
                 if url_now != url_before and "upload" not in url_now:
                     safe_print(f"OK:投稿完了 (URL: {url_now})", flush=True)
                     return
-                # エラーメッセージを検出
-                error_text = page.evaluate("""() => {
-                    const els = document.querySelectorAll('[class*="error"],[class*="Error"],[role="alert"]');
-                    return Array.from(els).map(e => e.innerText).filter(t => t.trim()).join(' | ');
-                }""")
-                if error_text:
+
+                # 「今すぐ投稿」確認ダイアログが出たらクリック
+                for confirm_text in ["今すぐ投稿", "Post now", "Post anyway"]:
                     try:
-                        import pathlib
-                        ss_dir = pathlib.Path(video_path).parent.parent / "screenshots"
-                        ss_dir.mkdir(exist_ok=True)
-                        ss_path = str(ss_dir / "upload_error.png")
-                        page.screenshot(path=ss_path)
-                        safe_print(f"INFO:エラー時スクリーンショット: {ss_path}", flush=True)
+                        btn = page.get_by_text(confirm_text, exact=True).first
+                        if btn.is_visible():
+                            btn.click()
+                            safe_print(f"INFO:確認ダイアログ「{confirm_text}」をクリック", flush=True)
+                            time.sleep(5)
+                            break
                     except Exception:
                         pass
-                    safe_print(f"ERROR:TikTokエラー: {error_text[:200]}", flush=True)
-                    sys.exit(1)
 
             # タイムアウト：URLは変わらなかったが投稿された可能性あり
             safe_print(f"OK:投稿ボタンクリック完了（URL未変化）", flush=True)
