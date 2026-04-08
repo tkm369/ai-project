@@ -13,7 +13,7 @@ from moviepy.audio.fx import AudioLoop
 
 import config
 
-BGM_DIR = r"C:\tiktok_bgm"
+BGM_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bgm")
 BGM_VOLUME = 0.25  # 25%
 
 logger = logging.getLogger(__name__)

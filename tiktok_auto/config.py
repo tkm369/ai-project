@@ -52,7 +52,7 @@ SHADOW_OPACITY = 140  # 0-255
 # ---- ファイルパス ----------------------------------------
 import os
 BASE_DIR        = os.path.dirname(os.path.abspath(__file__))
-BACKGROUNDS_DIR = r"C:\tiktok_backgrounds"   # 背景動画を置くフォルダ（固定パス・git管理外）
+BACKGROUNDS_DIR = os.path.join(BASE_DIR, "backgrounds")  # 背景動画を置くフォルダ
 SCREENSHOTS_DIR = os.path.join(BASE_DIR, "screenshots")   # 一時保存
 OUTPUT_DIR      = os.path.join(BASE_DIR, "output")        # 完成動画
 QUEUE_FILE      = os.path.join(BASE_DIR, "queue.json")    # 投稿キュー
