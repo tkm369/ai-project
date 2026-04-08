@@ -60,7 +60,16 @@ def extract_text(url: str) -> str:
                     const spans = document.querySelectorAll("span[dir='auto']");
                     return Array.from(spans)
                         .map(s => s.innerText.trim())
-                        .filter(t => t.length > 15 && !t.includes('Translate') && !t.includes('Related'));
+                        .filter(t => {
+                            if (t.length < 10) return false;
+                            if (t.includes('Translate') || t.includes('Related')) return false;
+                            // ユーザー名除外: スペースなし かつ アンダースコア含む or 英数字のみ
+                            const hasSpace = t.includes(' ') || t.includes('\n');
+                            const hasJapanese = /[\u3000-\u9fff]/.test(t);
+                            const isUsername = !hasSpace && !hasJapanese && t.length < 50;
+                            if (isUsername) return false;
+                            return true;
+                        });
                 }""")
                 if texts:
                     text = texts[0]  # 最初の有効なテキスト
