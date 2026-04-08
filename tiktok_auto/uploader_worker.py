@@ -189,6 +189,15 @@ def run(video_path: str, caption: str):
                     return Array.from(els).map(e => e.innerText).filter(t => t.trim()).join(' | ');
                 }""")
                 if error_text:
+                    try:
+                        import pathlib
+                        ss_dir = pathlib.Path(video_path).parent.parent / "screenshots"
+                        ss_dir.mkdir(exist_ok=True)
+                        ss_path = str(ss_dir / "upload_error.png")
+                        page.screenshot(path=ss_path)
+                        safe_print(f"INFO:エラー時スクリーンショット: {ss_path}", flush=True)
+                    except Exception:
+                        pass
                     safe_print(f"ERROR:TikTokエラー: {error_text[:200]}", flush=True)
                     sys.exit(1)
 
