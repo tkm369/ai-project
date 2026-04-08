@@ -9,8 +9,12 @@ import json
 import time
 import subprocess
 
-# Windows環境でUTF-8出力を強制（\xa0などの文字でクラッシュしないよう）
-sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', errors='replace', buffering=1)
+
+def safe_print(*args, **kwargs):
+    """cp932で出力できない文字を置換してprint"""
+    text = " ".join(str(a) for a in args)
+    text = text.encode('cp932', errors='replace').decode('cp932')
+    print(text, **kwargs)
 
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 DEBUG_PROFILE = r"C:\tiktok_debug_profile"
@@ -55,10 +59,10 @@ def kill_chrome_holding_profile(profile_dir):
                 pid = line.split("=")[1].strip()
                 if pid:
                     subprocess.run(["taskkill", "/F", "/PID", pid], timeout=5)
-                    print(f"INFO:Chrome PID {pid} を終了しました", flush=True)
+                    safe_print(f"INFO:Chrome PID {pid} を終了しました", flush=True)
         time.sleep(2)
     except Exception as e:
-        print(f"INFO:Chrome終了試行: {e}", flush=True)
+        safe_print(f"INFO:Chrome終了試行: {e}", flush=True)
 
 
 def release_profile_lock(profile_dir):
@@ -69,15 +73,15 @@ def release_profile_lock(profile_dir):
         try:
             if lock_path.exists():
                 lock_path.unlink()
-                print(f"INFO:{lock_name} 削除完了", flush=True)
+                safe_print(f"INFO:{lock_name} 削除完了", flush=True)
         except Exception as e:
-            print(f"INFO:{lock_name} 削除失敗: {e}", flush=True)
+            safe_print(f"INFO:{lock_name} 削除失敗: {e}", flush=True)
 
 
 def run(video_path: str, caption: str):
     cookies = get_cookies()
     if not any(c["name"] == "sessionid" for c in cookies):
-        print("ERROR:TIKTOK_SESSION_ID未設定", flush=True)
+        safe_print("ERROR:TIKTOK_SESSION_ID未設定", flush=True)
         sys.exit(1)
 
     kill_chrome_holding_profile(DEBUG_PROFILE)
@@ -106,13 +110,13 @@ def run(video_path: str, caption: str):
             page = context.new_page()
 
             context.add_cookies(cookies)
-            print("INFO:Cookie注入完了", flush=True)
+            safe_print("INFO:Cookie注入完了", flush=True)
 
             page.goto("https://www.tiktok.com/tiktokstudio/upload", timeout=30000)
             time.sleep(6)
 
             if "login" in page.url.lower():
-                print("ERROR:ログインページ。sessionid期限切れ", flush=True)
+                safe_print("ERROR:ログインページ。sessionid期限切れ", flush=True)
                 sys.exit(1)
 
             file_input = page.locator('input[type="file"]').first
@@ -124,7 +128,7 @@ def run(video_path: str, caption: str):
                 el.removeAttribute('hidden');
             }""", file_input.element_handle())
             file_input.set_input_files(video_path)
-            print("INFO:動画セット完了", flush=True)
+            safe_print("INFO:動画セット完了", flush=True)
             time.sleep(8)
 
             # キャプション入力
@@ -135,7 +139,7 @@ def run(video_path: str, caption: str):
                     el.wait_for(timeout=5000)
                     el.click()
                     el.fill(caption_short)
-                    print(f"INFO:キャプション入力 ({sel})", flush=True)
+                    safe_print(f"INFO:キャプション入力 ({sel})", flush=True)
                     break
                 except Exception:
                     continue
@@ -159,7 +163,7 @@ def run(video_path: str, caption: str):
                     btn = page.locator(sel).first
                     btn.wait_for(state="visible", timeout=3000)
                     btn_text = btn.inner_text()
-                    print(f"INFO:投稿ボタン発見 ({sel}): '{btn_text}'", flush=True)
+                    safe_print(f"INFO:投稿ボタン発見 ({sel}): '{btn_text}'", flush=True)
                     btn.click()
                     clicked = True
                     break
@@ -167,7 +171,7 @@ def run(video_path: str, caption: str):
                     continue
 
             if not clicked:
-                print("ERROR:投稿ボタンが見つかりませんでした", flush=True)
+                safe_print("ERROR:投稿ボタンが見つかりませんでした", flush=True)
                 sys.exit(1)
 
             # 投稿成功を確認（URLが変わるか成功メッセージが出るまで最大30秒待つ）
@@ -177,7 +181,7 @@ def run(video_path: str, caption: str):
                 url_now = page.url
                 # URLが変わったら成功
                 if url_now != url_before and "upload" not in url_now:
-                    print(f"OK:投稿完了 (URL: {url_now})", flush=True)
+                    safe_print(f"OK:投稿完了 (URL: {url_now})", flush=True)
                     return
                 # エラーメッセージを検出
                 error_text = page.evaluate("""() => {
@@ -185,14 +189,14 @@ def run(video_path: str, caption: str):
                     return Array.from(els).map(e => e.innerText).filter(t => t.trim()).join(' | ');
                 }""")
                 if error_text:
-                    print(f"ERROR:TikTokエラー: {error_text[:200]}", flush=True)
+                    safe_print(f"ERROR:TikTokエラー: {error_text[:200]}", flush=True)
                     sys.exit(1)
 
             # タイムアウト：URLは変わらなかったが投稿された可能性あり
-            print(f"OK:投稿ボタンクリック完了（URL未変化）", flush=True)
+            safe_print(f"OK:投稿ボタンクリック完了（URL未変化）", flush=True)
 
     except Exception as e:
-        print(f"ERROR:{e}", flush=True)
+        safe_print(f"ERROR:{e}", flush=True)
         sys.exit(1)
     finally:
         try:
@@ -208,6 +212,6 @@ def run(video_path: str, caption: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("ERROR:引数不足 <video_path> <caption>", flush=True)
+        safe_print("ERROR:引数不足 <video_path> <caption>", flush=True)
         sys.exit(1)
     run(sys.argv[1], sys.argv[2])
