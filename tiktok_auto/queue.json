@@ -100,8 +100,8 @@
     "url": "https://www.threads.net/post/DQ8PLBGk_zB",
     "caption_override": "",
     "added_at": "2026-04-08T10:14:57.184346",
-    "status": "failed",
-    "processed_at": "2026-04-09T17:10:29.733926",
+    "status": "skipped",
+    "processed_at": "2026-04-09T19:00:20.042356",
     "fail_count": 1
   },
   {
