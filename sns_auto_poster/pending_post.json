@@ -1,4 +1,13 @@
 {
-  "skip": true,
-  "reason": "Gemini quota exceeded"
+  "skip": false,
+  "content": "あなたの片思い、実は宇宙が特別なメッセージを送っています。🌌\n夜空を見上げるたび、募る切なさに心がぎゅっとなる瞬間。彼の気持ちばかり気にして、不安や焦りに押しつぶされそうになること、痛いほどよく分かります。\n\nでも、安心してください。その切なさは、あなたが真実の愛に触れようとしている証拠。宇宙は今、あなただけの特別な幸せへの道を懸命に照らしています。彼の心を無理に探る必要はありません。今はまず、あなた自身の心を愛と優しさで満たしてあげて。あなたがあなたらしく輝くほど、自然と彼の心はあなたの元へ引き寄せられるはずです。焦らず、自分を信じて。明日の星は、一番の味方です。\n\n今日も、あなたらしくいてください。",
+  "score": 85,
+  "time_slot": "20",
+  "image_filename": "20260409_203922_pure.png",
+  "image_url": "https://raw.githubusercontent.com/tkm369/sns-auto-poster/master/sns_auto_poster/generated_images/20260409_203922_pure.png",
+  "image_style": null,
+  "image_content_pattern": null,
+  "length_category": "long",
+  "post_type": "pure_image",
+  "pure_image_style": "pure_shrine"
 }
