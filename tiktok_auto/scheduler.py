@@ -106,6 +106,29 @@ def mark_item(url: str, status: str):
 #  投稿ジョブ
 # ------------------------------------------------------------------ #
 
+POSTS_LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "posts_log.json")
+
+def _log_post(post_id: str, source_url: str, text: str, posted_at: str):
+    """投稿メタデータをposts_log.jsonに記録"""
+    if os.path.exists(POSTS_LOG_FILE):
+        with open(POSTS_LOG_FILE, "r", encoding="utf-8") as f:
+            log = json.load(f)
+    else:
+        log = []
+    log.append({
+        "id": post_id,
+        "posted_at": posted_at,
+        "source_url": source_url,
+        "text": text,
+        "views": None,
+        "likes": None,
+        "comments": None,
+        "last_checked": None,
+    })
+    with open(POSTS_LOG_FILE, "w", encoding="utf-8") as f:
+        json.dump(log, f, ensure_ascii=False, indent=2)
+
+
 def build_caption(item: dict) -> str:
     """キャプション文字列を生成"""
     text = item.get("caption_override", "") or ""
@@ -175,6 +198,7 @@ def run_post_job():
 
         if ok:
             mark_item(url, "done")
+            _log_post(post_id=timestamp, source_url=url, text=improved_text, posted_at=datetime.now().isoformat())
             logger.info(f"=== 投稿完了: {url} ===")
         else:
             mark_item(url, "failed")
