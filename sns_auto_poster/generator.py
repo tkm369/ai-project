@@ -78,31 +78,48 @@ MODEL = "gemini-2.5-flash"
 _CALL_INTERVAL = 13  # seconds between API calls
 
 
-def _generate(prompt, max_retries=3):
-    """レート制限を考慮してAPIを呼び出す（リトライ付き）"""
+FALLBACK_MODEL = "gemini-1.5-flash"  # 2.5-flashが落ちたときのフォールバック
+
+
+def _generate(prompt, max_retries=4):
+    """レート制限・503を考慮してAPIを呼び出す（リトライ＋フォールバック付き）"""
+    import re
     time.sleep(_CALL_INTERVAL)
+    use_model = MODEL
     for attempt in range(max_retries):
         try:
-            response = _get_client().models.generate_content(model=MODEL, contents=prompt)
+            response = _get_client().models.generate_content(model=use_model, contents=prompt)
             return response.text.strip()
         except Exception as e:
             err_str = str(e)
+
+            # 日次クォータ超過は即終了
+            if ("PerDay" in err_str or "per_day" in err_str.lower()
+                    or "GenerateRequestsPerDay" in err_str):
+                print(f"  日次クォータ超過のため処理を終了します")
+                raise
+
+            # 429 RPM制限 → 待機してリトライ
             if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
-                # 日次クォータ超過（PerDay）はリトライしても無意味なので即re-raise
-                if "PerDay" in err_str or "per_day" in err_str.lower() or "GenerateRequestsPerDay" in err_str:
-                    print(f"  日次クォータ超過のため処理を終了します")
-                    raise
-                # RPM制限の場合はwaitしてリトライ
-                import re
                 m = re.search(r"retry in (\d+)", err_str)
                 wait = int(m.group(1)) + 5 if m else 65
                 print(f"  レート制限 (429)、{wait}秒待機後リトライ ({attempt+1}/{max_retries})")
                 time.sleep(wait)
+
+            # 503 高負荷 → フォールバックモデルで即リトライ
+            elif "503" in err_str or "UNAVAILABLE" in err_str:
+                if use_model != FALLBACK_MODEL:
+                    print(f"  Gemini 503 高負荷 → {FALLBACK_MODEL} にフォールバック ({attempt+1}/{max_retries})")
+                    use_model = FALLBACK_MODEL
+                else:
+                    wait = 30 * (attempt + 1)
+                    print(f"  Gemini 503 継続中、{wait}秒待機後リトライ ({attempt+1}/{max_retries})")
+                    time.sleep(wait)
+
             else:
                 raise
-    # 最終試行
-    response = client.models.generate_content(model=MODEL, contents=prompt)
-    return response.text.strip()
+
+    raise RuntimeError(f"Gemini API {max_retries}回試行後も失敗しました")
 
 
 def get_time_theme():
