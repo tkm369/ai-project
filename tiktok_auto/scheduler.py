@@ -126,6 +126,16 @@ def run_post_job():
     url = item["url"]
     logger.info(f"=== 投稿開始: {url} ===")
 
+    # 処理開始時点でseen_idsに登録（重複投稿防止）
+    from fetcher import load_seen, save_seen
+    seen = load_seen()
+    if url in seen:
+        logger.warning(f"既投稿済みURLのためスキップ: {url}")
+        mark_item(url, "skipped")
+        return
+    seen.add(url)
+    save_seen(seen)
+
     try:
         import time as _time
 
@@ -137,7 +147,7 @@ def run_post_job():
 
         if not is_valid_post(post_text):
             logger.warning(f"Gemini判定NG: 不適切なテキストのためスキップ → {post_text[:50]}")
-            mark_done(url, status="skipped")
+            mark_item(url, "skipped")
             return
 
         improved_text = improve_text(post_text)
