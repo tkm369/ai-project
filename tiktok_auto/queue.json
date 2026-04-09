@@ -85,15 +85,16 @@
     "url": "https://www.threads.net/post/DWqqcIgge3T",
     "caption_override": "",
     "added_at": "2026-04-08T10:14:57.183346",
-    "status": "failed",
-    "processed_at": "2026-04-08T21:01:29.392230",
+    "status": "done",
+    "processed_at": "2026-04-09T09:53:10.132809",
     "fail_count": 1
   },
   {
     "url": "https://www.threads.net/post/DVYFHCNCR6r",
     "caption_override": "",
     "added_at": "2026-04-08T10:14:57.183346",
-    "status": "pending"
+    "status": "done",
+    "processed_at": "2026-04-09T09:50:36.779798"
   },
   {
     "url": "https://www.threads.net/post/DQ8PLBGk_zB",
