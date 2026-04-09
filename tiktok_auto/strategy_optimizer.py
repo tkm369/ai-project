@@ -118,7 +118,7 @@ def run_pdca():
 {{
   "insight": "データ全体の分析コメント（日本語150文字以内）",
   "recommended_hashtags": ["検索に使うべきThreadsハッシュタグ（#なし）を5〜8個"],
-  "optimal_video_duration": 数字（秒、5〜15の間）,
+  "optimal_video_duration": 数字（秒、8〜15の間）,
   "content_style_hint": "伸びているコンテンツのスタイル・特徴をGeminiへの指示形式で（日本語100文字以内）",
   "best_hours_note": "再生数が伸びやすい投稿時間帯のコメント（日本語50文字以内）"
 }}
@@ -174,7 +174,7 @@ def _update_config(hashtags: list, video_duration, content_style_hint: str):
         logger.info(f"ハッシュタグ更新: {hashtags}")
 
     # VIDEO_DURATION更新
-    if video_duration and 5 <= float(video_duration) <= 15:
+    if video_duration and 8 <= float(video_duration) <= 15:
         content = re.sub(r'VIDEO_DURATION\s*=\s*[\d.]+', f'VIDEO_DURATION = {float(video_duration)}', content)
         logger.info(f"動画尺更新: {video_duration}秒")
 
