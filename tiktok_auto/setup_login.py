@@ -11,7 +11,9 @@ setup_login.py - TikTokに一度だけログインしてセッションを保存
 import os
 from playwright.sync_api import sync_playwright
 
-PROFILE_DIR = os.environ.get("TIKTOK_PROFILE_DIR", r"C:\tiktok_profile")
+# uploader_worker.py と同じプロファイルを使う
+PROFILE_DIR = r"C:\tiktok_debug_profile"
+
 
 def main():
     print("=" * 50)
@@ -34,19 +36,21 @@ def main():
         print("ログイン完了後、ここで Enter を押してください...")
         input()
 
-        # ログイン確認
         page.goto("https://www.tiktok.com", timeout=15000)
         page.wait_for_load_state("networkidle")
 
         cookies = context.cookies()
         session = next((c for c in cookies if c["name"] == "sessionid"), None)
         if session:
-            print("✓ ログイン確認完了！セッションを保存しました。")
-            print("これで python scheduler.py run で自動投稿が動きます。")
+            print("ログイン確認完了！セッションをプロファイルに保存しました。")
+            print(f"sessionid: {session['value'][:16]}...")
+            print()
+            print("これで自動投稿が動きます。次回から手動操作は不要です。")
         else:
-            print("× ログインが確認できませんでした。もう一度試してください。")
+            print("ログインが確認できませんでした。もう一度試してください。")
 
         context.close()
+
 
 if __name__ == "__main__":
     main()
