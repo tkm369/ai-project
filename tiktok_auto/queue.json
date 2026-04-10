@@ -19,8 +19,8 @@
     "url": "https://www.threads.net/post/DTZDN3wCt4s",
     "caption_override": "",
     "added_at": "2026-04-08T10:14:57.184346",
-    "status": "failed",
-    "processed_at": "2026-04-11T01:09:46.763044",
+    "status": "skipped",
+    "processed_at": "2026-04-11T01:38:00.904212",
     "fail_count": 1
   },
   {
@@ -389,5 +389,26 @@
     "added_at": "2026-04-08T10:14:57.183346",
     "status": "done",
     "processed_at": "2026-04-09T09:50:36.779798"
+  },
+  {
+    "url": "https://www.threads.net/post/DW8jz5Rk5PZ",
+    "caption_override": "",
+    "added_at": "2026-04-11T01:38:00.855178",
+    "status": "pending",
+    "hashtag": "復縁占い"
+  },
+  {
+    "url": "https://www.threads.net/post/DKJJsUjR4ip",
+    "caption_override": "",
+    "added_at": "2026-04-11T01:38:00.855178",
+    "status": "pending",
+    "hashtag": "復縁占い"
+  },
+  {
+    "url": "https://www.threads.net/post/DOaCFZIESxz",
+    "caption_override": "",
+    "added_at": "2026-04-11T01:38:00.856178",
+    "status": "pending",
+    "hashtag": "復縁占い"
   }
 ]
