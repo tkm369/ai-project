@@ -6,6 +6,9 @@ import sys
 import time
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
+# Windows cp932環境でも絵文字等を含むテキストを出力できるようにUTF-8に設定
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 
 def dismiss_overlays(page):
     """各種ポップアップ・オーバーレイを閉じる"""
