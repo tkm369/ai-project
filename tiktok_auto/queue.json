@@ -19,8 +19,8 @@
     "url": "https://www.threads.net/post/DQ-LIfjk9Ko",
     "caption_override": "",
     "added_at": "2026-04-08T10:50:48.433854",
-    "status": "failed",
-    "processed_at": "2026-04-11T03:06:47.345839",
+    "status": "skipped",
+    "processed_at": "2026-04-11T03:31:56.209194",
     "fail_count": 1
   },
   {
@@ -412,5 +412,12 @@
     "added_at": "2026-04-08T10:14:57.183346",
     "status": "done",
     "processed_at": "2026-04-09T09:50:36.779798"
+  },
+  {
+    "url": "https://www.threads.net/post/DW86JeiD3mD",
+    "caption_override": "",
+    "added_at": "2026-04-11T03:31:56.153726",
+    "status": "pending",
+    "hashtag": "復縁"
   }
 ]
