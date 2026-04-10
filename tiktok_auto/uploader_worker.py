@@ -213,20 +213,27 @@ def run(video_path: str, caption: str):
                     btn.wait_for(state="visible", timeout=5000)
                     btn_text = btn.inner_text()
                     safe_print(f"INFO:投稿ボタン発見 ({sel}): '{btn_text}'", flush=True)
-                    # disabledが解除されるまで待つ（最大60秒）
-                    for _ in range(60):
+                    # disabledが解除されるまで待つ（最大90秒）
+                    is_disabled = True
+                    for wait_i in range(90):
                         is_disabled = page.evaluate(
                             "(sel) => { const el = document.querySelector(sel); return el ? el.disabled || el.getAttribute('disabled') !== null || el.getAttribute('aria-disabled') === 'true' : true; }",
                             sel
                         )
                         if not is_disabled:
+                            safe_print(f"INFO:投稿ボタンenabled確認({wait_i}秒)", flush=True)
                             break
                         time.sleep(1)
-                    btn.click()
+                    if is_disabled:
+                        safe_print(f"WARN:投稿ボタンがまだdisabledです、force clickします", flush=True)
+                        page.evaluate(f"() => document.querySelector('{sel}').click()")
+                    else:
+                        btn.click()
                     clicked = True
                     safe_print(f"INFO:投稿ボタンクリック完了", flush=True)
                     break
-                except Exception:
+                except Exception as e:
+                    safe_print(f"WARN:投稿ボタン ({sel}) 失敗: {e}", flush=True)
                     continue
 
             if not clicked:
