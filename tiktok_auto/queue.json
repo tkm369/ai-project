@@ -4,8 +4,8 @@
     "caption_override": "",
     "added_at": "2026-04-04T07:54:38.006410",
     "status": "failed",
-    "processed_at": "2026-04-11T04:11:11.531141",
-    "fail_count": 1
+    "processed_at": "2026-04-11T04:15:29.629356",
+    "fail_count": 2
   },
   {
     "url": "https://www.threads.net/post/DE_gjCaSiws",
@@ -282,6 +282,34 @@
     "hashtag": "復縁したい"
   },
   {
+    "url": "https://www.threads.net/post/DWiucx_DGNH",
+    "caption_override": "",
+    "added_at": "2026-04-11T04:11:06.343188",
+    "status": "pending",
+    "hashtag": "復縁占い"
+  },
+  {
+    "url": "https://www.threads.net/post/DW9Pn06CUGF",
+    "caption_override": "",
+    "added_at": "2026-04-11T04:11:06.344188",
+    "status": "pending",
+    "hashtag": "復縁占い"
+  },
+  {
+    "url": "https://www.threads.net/post/DPi2nSFErGX",
+    "caption_override": "",
+    "added_at": "2026-04-11T04:11:06.344188",
+    "status": "pending",
+    "hashtag": "復縁占い"
+  },
+  {
+    "url": "https://www.threads.net/post/DP6NmEPkepd",
+    "caption_override": "",
+    "added_at": "2026-04-11T04:11:06.344188",
+    "status": "pending",
+    "hashtag": "復縁占い"
+  },
+  {
     "url": "https://www.threads.net/post/DWrXm4rj9yC",
     "caption_override": "",
     "added_at": "2026-04-04T07:54:38.006410",
@@ -473,33 +501,5 @@
     "added_at": "2026-04-08T10:14:57.183346",
     "status": "done",
     "processed_at": "2026-04-09T09:50:36.779798"
-  },
-  {
-    "url": "https://www.threads.net/post/DWiucx_DGNH",
-    "caption_override": "",
-    "added_at": "2026-04-11T04:11:06.343188",
-    "status": "pending",
-    "hashtag": "復縁占い"
-  },
-  {
-    "url": "https://www.threads.net/post/DW9Pn06CUGF",
-    "caption_override": "",
-    "added_at": "2026-04-11T04:11:06.344188",
-    "status": "pending",
-    "hashtag": "復縁占い"
-  },
-  {
-    "url": "https://www.threads.net/post/DPi2nSFErGX",
-    "caption_override": "",
-    "added_at": "2026-04-11T04:11:06.344188",
-    "status": "pending",
-    "hashtag": "復縁占い"
-  },
-  {
-    "url": "https://www.threads.net/post/DP6NmEPkepd",
-    "caption_override": "",
-    "added_at": "2026-04-11T04:11:06.344188",
-    "status": "pending",
-    "hashtag": "復縁占い"
   }
 ]
