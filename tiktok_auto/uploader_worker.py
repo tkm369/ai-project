@@ -152,7 +152,7 @@ def run(video_path: str, caption: str):
                 if any(any(k in b for k in post_keywords) for b in buttons):
                     break
 
-            # 投稿ボタンをクリック
+            # 投稿ボタンをクリック（disabledが解除されるまで最大60秒待つ）
             clicked = False
             for sel in [
                 '[data-e2e="post_video_button"]',
@@ -161,11 +161,21 @@ def run(video_path: str, caption: str):
             ]:
                 try:
                     btn = page.locator(sel).first
-                    btn.wait_for(state="visible", timeout=3000)
+                    btn.wait_for(state="visible", timeout=5000)
                     btn_text = btn.inner_text()
                     safe_print(f"INFO:投稿ボタン発見 ({sel}): '{btn_text}'", flush=True)
+                    # disabledが解除されるまで待つ（最大60秒）
+                    for _ in range(60):
+                        is_disabled = page.evaluate(
+                            "(sel) => { const el = document.querySelector(sel); return el ? el.disabled || el.getAttribute('disabled') !== null || el.getAttribute('aria-disabled') === 'true' : true; }",
+                            sel
+                        )
+                        if not is_disabled:
+                            break
+                        time.sleep(1)
                     btn.click()
                     clicked = True
+                    safe_print(f"INFO:投稿ボタンクリック完了", flush=True)
                     break
                 except Exception:
                     continue
