@@ -119,17 +119,63 @@ def run(video_path: str, caption: str):
                 safe_print("ERROR:ログインページ。sessionid期限切れ", flush=True)
                 sys.exit(1)
 
-            file_input = page.locator('input[type="file"]').first
-            file_input.wait_for(state="attached", timeout=15000)
+            # ファイル選択ダイアログをインターセプトしてファイルをセット
+            # TikTokのReactハンドラを正しく起動させるため、実際のボタンクリックを使う
+            upload_triggered = False
+            try:
+                with page.expect_file_chooser(timeout=15000) as fc_info:
+                    # アップロードボタンやドラッグエリアをクリック
+                    for up_sel in [
+                        '[data-e2e="upload-btn"]',
+                        'button:has-text("アップロード")',
+                        'div[class*="upload"]:has-text("アップロード")',
+                        'label[for]',
+                        'input[type="file"]',
+                    ]:
+                        try:
+                            el = page.locator(up_sel).first
+                            if el.is_visible(timeout=2000):
+                                el.click()
+                                break
+                        except Exception:
+                            continue
+                file_chooser = fc_info.value
+                file_chooser.set_files(video_path)
+                upload_triggered = True
+                safe_print("INFO:動画セット完了（ファイルチューザー経由）", flush=True)
+            except Exception as e:
+                safe_print(f"INFO:ファイルチューザー失敗、直接セット試行: {e}", flush=True)
 
-            page.evaluate("""el => {
-                el.style.display = 'block';
-                el.style.opacity = '1';
-                el.removeAttribute('hidden');
-            }""", file_input.element_handle())
-            file_input.set_input_files(video_path)
-            safe_print("INFO:動画セット完了", flush=True)
-            time.sleep(8)
+            if not upload_triggered:
+                # フォールバック：input[type=file]を直接操作
+                file_input = page.locator('input[type="file"]').first
+                file_input.wait_for(state="attached", timeout=15000)
+                page.evaluate("""el => {
+                    el.style.display = 'block';
+                    el.style.opacity = '1';
+                    el.removeAttribute('hidden');
+                }""", file_input.element_handle())
+                file_input.set_input_files(video_path)
+                # React の onChange イベントを手動発火
+                page.evaluate("""el => {
+                    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'files').set;
+                    const event = new Event('change', { bubbles: true });
+                    el.dispatchEvent(event);
+                    const inputEvent = new Event('input', { bubbles: true });
+                    el.dispatchEvent(inputEvent);
+                }""", file_input.element_handle())
+                safe_print("INFO:動画セット完了（直接セット）", flush=True)
+
+            # アップロード開始を確認（最大30秒）
+            for i in range(15):
+                time.sleep(2)
+                page_text = page.evaluate("() => document.body.innerText.slice(0, 200)")
+                btns = page.evaluate("() => Array.from(document.querySelectorAll('button')).map(b=>b.innerText.trim()).filter(t=>t)")
+                safe_print(f"INFO:ページ状態({i*2}秒) ボタン:{btns[:4]}", flush=True)
+                # 動画処理中・キャプション入力エリアが出たら次へ
+                uploading_signs = ["アップロード中", "処理中", "caption", "キャプション"]
+                if any(s in page_text for s in uploading_signs) or any("投稿" in b for b in btns):
+                    break
 
             # キャプション入力
             caption_short = caption[:150]
