@@ -191,42 +191,50 @@ def run(video_path: str, caption: str):
                 }""", file_input.element_handle())
                 safe_print("INFO:動画セット完了（直接セット）", flush=True)
 
-            # アップロード開始を確認（最大30秒）
-            for i in range(15):
-                time.sleep(2)
-                page_text = page.evaluate("() => document.body.innerText.slice(0, 200)")
-                btns = page.evaluate("() => Array.from(document.querySelectorAll('button')).map(b=>b.innerText.trim()).filter(t=>t)")
-                safe_print(f"INFO:ページ状態({i*2}秒) ボタン:{btns[:4]}", flush=True)
-                # 動画処理中・キャプション入力エリアが出たら次へ
-                uploading_signs = ["アップロード中", "処理中", "caption", "キャプション"]
-                if any(s in page_text for s in uploading_signs) or any("投稿" in b for b in btns):
-                    break
-
-            # キャプション入力
+            # キャプション入力エリアが出るまで待つ（最大60秒）
+            time.sleep(5)
             caption_short = caption[:150]
             for sel in ['[data-text="true"]', '[contenteditable="true"]', 'textarea[placeholder]']:
                 try:
                     el = page.locator(sel).first
-                    el.wait_for(timeout=5000)
-                    el.click()
+                    el.wait_for(timeout=8000)
+                    el.click(force=True)
                     el.fill(caption_short)
                     safe_print(f"INFO:キャプション入力 ({sel})", flush=True)
                     break
                 except Exception:
                     continue
 
-            # 動画処理完了を待つ（最大120秒）
-            for i in range(24):
-                time.sleep(5)
-                buttons = page.evaluate("() => Array.from(document.querySelectorAll('button')).map(b => b.innerText.trim())")
-                post_keywords = ["投稿する", "Post", "公開する", "投稿", "公開"]
-                if any(any(k in b for k in post_keywords) for b in buttons):
-                    safe_print(f"INFO:投稿可能ボタン検出: {[b for b in buttons if b][:5]}", flush=True)
-                    break
-                if i % 4 == 0:
-                    safe_print(f"INFO:待機中({i*5}秒) ボタン: {[b for b in buttons if b][:5]}", flush=True)
+            # 投稿ボタンが「クリック可能」になるまで最大180秒待つ
+            # TikTokのpost_video_buttonは動画処理完了まで class で無効化される（aria-disabled/disabled属性以外の場合も）
+            POST_SEL = '[data-e2e="post_video_button"]'
+            safe_print("INFO:動画処理完了待ち（最大180秒）", flush=True)
+            btn_ready = False
+            for wait_i in range(180):
+                try:
+                    state_js = """() => {
+                        const el = document.querySelector('[data-e2e="post_video_button"]');
+                        if (!el) return 'missing';
+                        if (el.disabled) return 'disabled_prop';
+                        if (el.getAttribute('disabled') !== null) return 'disabled_attr';
+                        if (el.getAttribute('aria-disabled') === 'true') return 'aria_disabled';
+                        // class名に disabled や loading が含まれる場合
+                        const cls = el.className || '';
+                        if (cls.includes('disabled') || cls.includes('loading') || cls.includes('processing')) return 'class_disabled:' + cls.slice(0,80);
+                        return 'ready';
+                    }"""
+                    state = page.evaluate(state_js)
+                    if wait_i % 10 == 0:
+                        safe_print(f"INFO:ボタン状態({wait_i}秒): {state}", flush=True)
+                    if state == 'ready':
+                        safe_print(f"INFO:投稿ボタン準備完了({wait_i}秒)", flush=True)
+                        btn_ready = True
+                        break
+                except Exception:
+                    pass
+                time.sleep(1)
 
-            # 投稿ボタンをクリック（disabledが解除されるまで最大60秒待つ）
+            # 投稿ボタンをクリック
             clicked = False
             for sel in [
                 '[data-e2e="post_video_button"]',
@@ -237,23 +245,12 @@ def run(video_path: str, caption: str):
                     btn = page.locator(sel).first
                     btn.wait_for(state="visible", timeout=5000)
                     btn_text = btn.inner_text()
-                    safe_print(f"INFO:投稿ボタン発見 ({sel}): '{btn_text}'", flush=True)
-                    # disabledが解除されるまで待つ（最大90秒）
-                    is_disabled = True
-                    for wait_i in range(90):
-                        is_disabled = page.evaluate(
-                            "(sel) => { const el = document.querySelector(sel); return el ? el.disabled || el.getAttribute('disabled') !== null || el.getAttribute('aria-disabled') === 'true' : true; }",
-                            sel
-                        )
-                        if not is_disabled:
-                            safe_print(f"INFO:投稿ボタンenabled確認({wait_i}秒)", flush=True)
-                            break
-                        time.sleep(1)
-                    if is_disabled:
-                        safe_print(f"WARN:投稿ボタンがまだdisabledです、force clickします", flush=True)
-                        page.evaluate(f"() => document.querySelector('{sel}').click()")
+                    safe_print(f"INFO:投稿ボタン発見 ({sel}): '{btn_text}' ready={btn_ready}", flush=True)
+                    if btn_ready:
+                        btn.click(force=True)
                     else:
-                        btn.click(force=True)  # オーバーレイを無視してクリック
+                        # readyでなくてもJSクリックで試みる
+                        page.evaluate(f"() => document.querySelector('{sel}').click()")
                     clicked = True
                     safe_print(f"INFO:投稿ボタンクリック完了", flush=True)
                     break
