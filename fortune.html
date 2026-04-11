@@ -225,6 +225,40 @@
       font-size: 0.9rem; line-height: 1.9;
     }
 
+    /* 相談鑑定 */
+    .consult-box {
+      background: linear-gradient(135deg, rgba(120,80,200,0.18), rgba(255,100,200,0.06));
+      border: 1px solid rgba(180,120,255,0.5);
+      border-radius: 16px; padding: 24px; margin-bottom: 16px;
+    }
+
+    .consult-label {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(180,120,255,0.2); border: 1px solid rgba(180,120,255,0.5);
+      border-radius: 20px; padding: 4px 14px;
+      font-size: 0.8rem; color: #c9a0ff; margin-bottom: 14px;
+    }
+
+    .consult-concern {
+      background: rgba(255,255,255,0.06); border-left: 3px solid #c9a0ff;
+      border-radius: 0 8px 8px 0; padding: 10px 14px; margin-bottom: 16px;
+      font-style: italic; color: #d4c0a0; font-size: 0.88rem; line-height: 1.7;
+    }
+
+    .oracle-picks {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+    }
+
+    .oracle-pick {
+      background: rgba(180,120,255,0.15); border: 1px solid rgba(180,120,255,0.4);
+      border-radius: 20px; padding: 5px 14px; font-size: 0.78rem; color: #c9a0ff;
+    }
+
+    .oracle-pick.top { background: rgba(255,215,0,0.15); border-color: rgba(255,215,0,0.5); color: #ffd700; }
+
+    .consult-reading { font-size: 0.9rem; line-height: 1.9; color: #e8d5b7; }
+    .consult-reading + .consult-reading { margin-top: 10px; }
+
     /* アクションガイド */
     .action-section {
       border-radius: 14px; padding: 22px; margin-bottom: 12px;
@@ -267,6 +301,65 @@
     .pillar-mini-item .pm-label { font-size: 0.6rem; color: #a89070; }
     .pillar-mini-item .pm-stem { font-size: 1.1rem; }
     .pillar-mini-item .pm-branch { font-size: 0.95rem; color: #d4c0a0; }
+
+    /* AI鑑定セクション */
+    .ai-reading-section {
+      background: linear-gradient(135deg, rgba(20,10,40,0.9), rgba(40,20,60,0.8));
+      border: 1px solid rgba(180,120,255,0.5);
+      border-radius: 16px; padding: 24px; margin-bottom: 16px;
+    }
+
+    .ai-header {
+      font-size: 1.1rem; color: #c9a0ff; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .ai-status {
+      color: #a89070; font-size: 0.85rem;
+      display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    }
+
+    .ai-spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(180,120,255,0.3);
+      border-top-color: #c9a0ff; border-radius: 50%;
+      animation: spin 0.8s linear infinite; flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .ai-content { font-size: 0.9rem; line-height: 1.9; color: #e8d5b7; }
+
+    .ai-h2 {
+      font-size: 1rem; color: #ffd700; margin: 18px 0 8px;
+      padding-bottom: 5px; border-bottom: 1px solid rgba(255,215,0,0.2);
+    }
+
+    .ai-h2:first-child { margin-top: 0; }
+
+    .ai-p { margin-bottom: 8px; }
+
+    .ai-li {
+      display: flex; gap: 8px; margin-bottom: 6px;
+      padding: 8px 12px; border-radius: 8px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .ai-li::before { content: '✦'; color: #c9a0ff; flex-shrink: 0; }
+
+    .ai-error {
+      color: #ff7070; background: rgba(255,80,80,0.1);
+      border: 1px solid rgba(255,80,80,0.3);
+      border-radius: 8px; padding: 12px; font-size: 0.85rem;
+    }
+
+    .ai-cursor {
+      display: inline-block; width: 2px; height: 1em;
+      background: #c9a0ff; margin-left: 2px;
+      animation: blink 0.8s step-end infinite; vertical-align: text-bottom;
+    }
+
+    @keyframes blink { 50% { opacity: 0; } }
 
     @media (max-width: 540px) {
       header h1 { font-size: 1.9rem; }
@@ -333,6 +426,10 @@
           <div class="blood-item" onclick="selectBlood(this,'O')"><span class="bl-emoji">🅾</span>O型</div>
           <div class="blood-item" onclick="selectBlood(this,'AB')"><span class="bl-emoji">🆎</span>AB型</div>
         </div>
+      </div>
+      <div class="form-group full">
+        <label>🔮 お悩み・ご相談（任意）<span style="color:#a89070;font-size:0.8rem;margin-left:8px">— 具体的に書くほど精度が上がります</span></label>
+        <textarea id="all-concern" rows="3" placeholder="例：転職すべきか迷っています。今の会社に不満はないけど成長できないと感じていて…&#10;例：好きな人がいるのですが、なかなか進展せず関係をどう発展させればいいか悩んでいます。&#10;（空欄の場合はテーマ別の総合鑑定を行います）" style="width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:8px;padding:10px 14px;color:#e8d5b7;font-size:0.92rem;font-family:inherit;outline:none;resize:vertical;transition:border-color 0.3s;line-height:1.6" onfocus="this.style.borderColor='#ffd700'" onblur="this.style.borderColor='rgba(255,215,0,0.25)'"></textarea>
       </div>
     </div>
     <button class="btn" onclick="readAll()">✨ 総合鑑定を開始する</button>
@@ -622,6 +719,7 @@ function readAll() {
   const hourRaw = document.getElementById('all-hour').value;
   const hourVal = hourRaw === 'unknown' ? null : parseInt(hourRaw);
   const theme   = document.getElementById('all-theme').value;
+  const concern = document.getElementById('all-concern').value.trim();
 
   if (!name || !birth) { alert('お名前と生年月日を入力してください'); return; }
 
@@ -694,6 +792,8 @@ function readAll() {
         <span class="lucky-badge">ᚱ ${rune.name}</span>
       </div>
     </div>
+
+    ${concern ? buildConsultationBlock(concern, analyzeConcern(concern), { name, zodiac, numData, lifeNum, dayData, dominant, cards, kStar, blood, rune, omikuji, eto, animal, theme }) : ''}
 
     <div class="reading-grid">
 
@@ -795,30 +895,13 @@ function readAll() {
 
     </div>
 
-    <!-- 総合鑑定メッセージ -->
-    <div class="synthesis-box">
-      <strong style="color:#ffd700;font-size:1rem">🔮 総合鑑定メッセージ</strong><br><br>
-      ${buildSynthesis(name, zodiac, numData, lifeNum, dayData, dominant, cards, theme, p, animal, kStar, blood, rune, omikuji, eto)}
-    </div>
-
-    <!-- 今日やること -->
-    <div class="action-section action-today">
-      <h3 style="color:#ffd700">☀️ 今日やること・意識すること</h3>
-      ${actions.today.map(a=>`
-        <div class="action-item">
-          <div class="action-icon">${a.icon}</div>
-          <div class="action-text"><strong>${a.title}</strong><br>${a.body}</div>
-        </div>`).join('')}
-    </div>
-
-    <!-- 今週やること -->
-    <div class="action-section action-week">
-      <h3 style="color:#7eb8ff">🌙 今週取り組むこと</h3>
-      ${actions.week.map(a=>`
-        <div class="action-item">
-          <div class="action-icon">${a.icon}</div>
-          <div class="action-text"><strong>${a.title}</strong><br>${a.body}</div>
-        </div>`).join('')}
+    <!-- AI鑑定 -->
+    <div class="ai-reading-section">
+      <div class="ai-header">🔮 AI 総合鑑定（Gemini）</div>
+      <div class="ai-status" id="ai-status">
+        <span class="ai-spinner"></span> 9つの占術データをAIが読み解いています...
+      </div>
+      <div id="ai-content" class="ai-content"></div>
     </div>
   `;
 
@@ -827,6 +910,34 @@ function readAll() {
     resultEl.querySelectorAll('.bar-fill').forEach(b=>{ b.style.width = b.style.width; });
     resultEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
   }, 100);
+
+  // AI鑑定リクエスト
+  const fortuneData = {
+    name, theme, concern,
+    oracles: {
+      tarot: {
+        past:    { name: cards[0].name, meaning: cards[0].upright },
+        present: { name: cards[1].name, meaning: cards[1].upright },
+        future:  { name: cards[2].name, meaning: cards[2].upright },
+      },
+      zodiac: { name: zodiac.name, dates: zodiac.dates, traits: zodiac.traits, scores: zodiac.scores },
+      numerology: { lifeNum, title: numData.title, desc: numData.desc, advice: numData.advice },
+      shichusuimei: {
+        yearPillar:  STEMS[p.yStem]  + BRANCHES[p.yBranch],
+        monthPillar: STEMS[p.mStem]  + BRANCHES[p.mBranch],
+        dayPillar:   STEMS[p.dStem]  + BRANCHES[p.dBranch],
+        hourPillar:  p.hStem !== null ? STEMS[p.hStem] + BRANCHES[p.hBranch] : null,
+        dayMaster: dayData.title,
+        dominantElement: ELEM_NAMES[dominant],
+      },
+      kyusei: { name: kStar.name, element: kStar.elem, luckyDir: kStar.lucky_dir, traits: kStar.traits },
+      blood: blood ? { type: selectedBlood, trait: blood.trait, desc: blood.desc } : null,
+      rune:    { name: rune.name,    symbol: rune.symbol,    meaning: rune.meaning,    message: rune.message },
+      omikuji: { level: omikuji.level, overall: omikuji.overall },
+      eto:     { animal: eto.animal, traits: eto.traits, fortune: eto.fortune },
+    }
+  };
+  callAI(fortuneData);
 }
 
 function buildSynthesis(name, zodiac, numData, lifeNum, dayData, dominant, cards, theme, p, animal, kStar, blood, rune, omikuji, eto) {
@@ -931,6 +1042,177 @@ function buildActions({ zodiac, numData, lifeNum, dayData, dominant, cards, them
   ];
 
   return { today, week };
+}
+
+// ===== AI鑑定 =====
+async function callAI(data) {
+  const statusEl  = document.getElementById('ai-status');
+  const contentEl = document.getElementById('ai-content');
+  let rawText = '';
+
+  try {
+    const res = await fetch('/api/fortune', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) throw new Error(`サーバーエラー: ${res.status}`);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if (payload === '[DONE]') { statusEl.style.display = 'none'; break; }
+
+        try {
+          const obj = JSON.parse(payload);
+          if (obj.error) {
+            contentEl.innerHTML = `<div class="ai-error">⚠️ ${obj.error}</div>`;
+            statusEl.style.display = 'none';
+            return;
+          }
+          if (obj.text) {
+            rawText += obj.text;
+            contentEl.innerHTML = renderAI(rawText) + '<span class="ai-cursor"></span>';
+          }
+        } catch (_) {}
+      }
+    }
+
+    contentEl.innerHTML = renderAI(rawText);
+    statusEl.style.display = 'none';
+
+  } catch (e) {
+    const isOffline = e.message.includes('fetch') || e.message.includes('Failed');
+    contentEl.innerHTML = `<div class="ai-error">
+      ${isOffline
+        ? '⚠️ サーバーに接続できません。<br><code>python fortune_server.py</code> を実行してから再度お試しください。'
+        : '⚠️ ' + e.message}
+    </div>`;
+    statusEl.style.display = 'none';
+  }
+}
+
+function renderAI(text) {
+  const lines = text.split('\n');
+  let html = '';
+  for (const line of lines) {
+    if (line.startsWith('## ')) {
+      html += `<div class="ai-h2">${line.slice(3)}</div>`;
+    } else if (line.startsWith('- ') || line.startsWith('・')) {
+      html += `<div class="ai-li">${line.replace(/^[-・]\s*/, '')}</div>`;
+    } else if (line.startsWith('**') && line.endsWith('**')) {
+      html += `<div class="ai-p"><strong style="color:#ffd700">${line.slice(2,-2)}</strong></div>`;
+    } else if (line.trim()) {
+      // インライン **bold** を処理
+      const formatted = line.replace(/\*\*(.+?)\*\*/g, '<strong style="color:#ffd700">$1</strong>');
+      html += `<div class="ai-p">${formatted}</div>`;
+    }
+  }
+  return html;
+}
+
+// ===== 悩み分析 =====
+function analyzeConcern(text) {
+  const keywords = {
+    love:         ['恋','好き','彼','彼女','婚','結婚','別れ','片思い','告白','浮気','愛','パートナー','交際','デート','好意','気持ち','胸','ときめき','振られ','フラれ','復縁','不倫','恋人'],
+    work:         ['仕事','転職','職場','上司','同僚','キャリア','昇進','転勤','起業','ビジネス','会社','退職','就職','業務','残業','評価','スキル','副業','独立','クビ','労働','プロジェクト'],
+    money:        ['お金','金銭','収入','節約','借金','投資','財布','貯金','給料','費用','返済','資産','ローン','生活費','節約','経済','お小遣い','富'],
+    health:       ['体','健康','病気','疲れ','メンタル','睡眠','ダイエット','ストレス','不調','痛','体力','精神','うつ','不安','緊張','体重','食欲','やる気'],
+    relationship: ['友達','友人','人間関係','家族','親','子供','兄弟','姉妹','夫','妻','義','関係','いじめ','孤独','仲間','コミュニティ','近所','ハラスメント'],
+    decision:     ['迷','決め','選択','どうすれば','どうしたら','悩','判断','べきか','すべき','迷い','踏み出','決断','チャンス','どちら','どっち','二択','岐路'],
+    future:       ['将来','未来','夢','目標','やりたい','人生','方向','進路','可能性','変化','新しい','挑戦','成長','自分','生き方','意味','幸せ'],
+  };
+  const scores = {};
+  for (const [cat, kws] of Object.entries(keywords)) {
+    scores[cat] = kws.filter(kw => text.includes(kw)).length;
+  }
+  const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const dominantCat = sorted[0][1] > 0 ? sorted[0][0] : 'future';
+  const subCat      = sorted[1]?.[1] > 0 ? sorted[1][0] : null;
+
+  // 悩みカテゴリ別・最も関連性の高い占術の順番
+  const oracleOrder = {
+    love:         ['tarot','zodiac','blood','eto','rune','numerology','kyusei','shichusuimei','omikuji'],
+    work:         ['kyusei','numerology','shichusuimei','tarot','eto','rune','zodiac','blood','omikuji'],
+    money:        ['kyusei','numerology','shichusuimei','tarot','zodiac','eto','rune','blood','omikuji'],
+    health:       ['shichusuimei','kyusei','zodiac','eto','rune','tarot','numerology','blood','omikuji'],
+    relationship: ['blood','zodiac','eto','tarot','rune','numerology','kyusei','shichusuimei','omikuji'],
+    decision:     ['tarot','rune','omikuji','numerology','kyusei','zodiac','shichusuimei','eto','blood'],
+    future:       ['numerology','shichusuimei','kyusei','tarot','rune','zodiac','eto','blood','omikuji'],
+  };
+  return { scores, dominantCat, subCat, topOracles: oracleOrder[dominantCat] };
+}
+
+// ===== 相談鑑定ブロック生成 =====
+function buildConsultationBlock(concern, analysis, d) {
+  const { dominantCat, subCat, topOracles } = analysis;
+  const { name, zodiac, numData, lifeNum, dayData, dominant, cards, kStar, blood, rune, omikuji, eto, animal, theme } = d;
+
+  const catLabel = { love:'恋愛・感情', work:'仕事・キャリア', money:'金運・財運', health:'健康・体調', relationship:'人間関係', decision:'決断・選択', future:'将来・人生' };
+  const catEmoji = { love:'💕', work:'💼', money:'💰', health:'🌿', relationship:'🤝', decision:'🔀', future:'🌟' };
+  const oracleLabel = { tarot:'🃏タロット', zodiac:`${zodiac.symbol}星座`, blood:'🩸血液型', eto:`${eto.emoji}干支`, rune:'ᚱルーン', numerology:'🔢数秘術', kyusei:`${kStar.symbol}九星気学`, shichusuimei:'☯四柱推命', omikuji:'🎴おみくじ' };
+
+  // 上位3つの占術でナラティブを構築
+  const [t1, t2, t3] = topOracles;
+
+  const oracleInsight = {
+    tarot:        `タロット「<strong style="color:#ffd700">${cards[1].name}</strong>」は今この状況に対して「${cards[1].upright}」というメッセージを送っています。未来のカード「${cards[2].name}」は${cards[2].upright}を示唆しており、`,
+    zodiac:       `${zodiac.symbol}${zodiac.name}座として「${zodiac.traits}」という特性を持つあなたにとって、この状況は`,
+    blood:        blood ? `${blood.emoji}${blood.title}の「${blood.trait}」という本質が、この問題の核心に深く関わっています。` : ``,
+    eto:          `${eto.emoji}${eto.animal}生まれの「${eto.strength}」という強みを活かすことで、`,
+    rune:         `ルーン「<strong style="color:#ffd700">${rune.name}（${rune.symbol}）</strong>」が示す「${rune.meaning}」は、今のあなたへの宇宙からのメッセージです。${rune.message}`,
+    numerology:   `運命数<strong style="color:#ffd700">${lifeNum}（${numData.title}）</strong>の使命「${numData.desc}」を軸に考えると、`,
+    kyusei:       `${kStar.symbol}${kStar.name}の運気として、今は「${kStar.traits}」が強調される時期。${kStar.action_today}`,
+    shichusuimei: `四柱推命の日主「<strong style="color:#ffd700">${dayData.title}</strong>」が示すように、${dayData.desc}この本質が今のお悩みの背景にあります。`,
+    omikuji:      `おみくじ「<strong style="color:${omikuji.color}">${omikuji.level}</strong>」が告げる通り、${omikuji.overall}`,
+  };
+
+  // カテゴリ別・核心メッセージ
+  const coreMsg = {
+    love:         `恋愛において最も大切なのは、あなた自身が持つ魅力を信じること。${zodiac.name}座の感性と${blood ? blood.title + 'の' + blood.trait : '豊かな内面'}が、相手の心を動かす鍵になります。`,
+    work:         `仕事の転換期において、${kStar.name}が示すラッキー方位「${kStar.lucky_dir}」からの縁に注目してください。数秘術の運命数${lifeNum}が示す使命と、日々の仕事が一致するとき、本当の力が発揮されます。`,
+    money:        `財運は行動と意識で変えられます。${kStar.name}のラッキーナンバー「${kStar.lucky_num}」を意識した日に重要な決断を。${numData.title}が示す本質的な豊かさとは何かを考えてみてください。`,
+    health:       `心身のバランスを整えるには、四柱推命の主気「${ELEM_NAMES[dominant]}」のエネルギーを意識した生活が効果的です。焦りを手放し、自分のペースを取り戻しましょう。`,
+    relationship: `人間関係の悩みは、${blood ? blood.title + 'らしい' + blood.trait + 'という特性' : 'あなたの本質'}が周囲との摩擦を生じさせているかもしれません。まず自分自身を深く理解することが、関係改善の第一歩です。`,
+    decision:     `迷いがある時こそ、タロットとルーンの示すサインが道標になります。「${cards[1].name}」の現在エネルギーと「${rune.name}」のメッセージを組み合わせると、答えが見えてきます。`,
+    future:       `将来への不安は、数秘術の運命数${lifeNum}「${numData.title}」が示す魂の方向性を思い出すことで和らぎます。あなたには${numData.desc.split('。')[0]}という使命があります。`,
+  };
+
+  return `
+    <div class="consult-box">
+      <div class="consult-label">
+        ${catEmoji[dominantCat]} ${catLabel[dominantCat]}の相談鑑定
+        ${subCat ? `<span style="opacity:0.6">・${catLabel[subCat]}</span>` : ''}
+      </div>
+      <div class="consult-concern">
+        「${concern}」
+      </div>
+      <div style="font-size:0.78rem;color:#a89070;margin-bottom:8px">この悩みに最も響く占術</div>
+      <div class="oracle-picks">
+        ${topOracles.slice(0,3).map((o,i)=>`<span class="oracle-pick${i===0?' top':''}">${i===0?'★ ':''} ${oracleLabel[o]}</span>`).join('')}
+        ${topOracles.slice(3,6).map(o=>`<span class="oracle-pick">${oracleLabel[o]}</span>`).join('')}
+      </div>
+      <div class="consult-reading">
+        ${oracleInsight[t1] || ''} ${oracleInsight[t2] || ''}<br><br>
+        ${oracleInsight[t3] || ''}<br><br>
+        <strong style="color:#c9a0ff">✦ ${name}さんへのメッセージ</strong><br>
+        ${coreMsg[dominantCat]}
+      </div>
+    </div>
+  `;
 }
 </script>
 </body>

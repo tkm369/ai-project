@@ -226,6 +226,23 @@ def run_pipeline(
     else:
         print(f"\n[Step 5/5] アップロードスキップ (--upload なし)")
 
+    # ── DB 登録（PDCA追跡用） ─────────────────────────────
+    try:
+        from pdca_db import save_video
+        save_video(
+            title         = script.title,
+            topic         = script.raw_topic,
+            video_type_id = video_type.id,
+            is_shorts     = is_shorts,
+            output_path   = video_path,
+            created_at    = ts,
+            video_id      = youtube_id or None,
+            uploaded_at   = datetime.now().isoformat() if youtube_id else None,
+            privacy       = privacy or "private",
+        )
+    except Exception as e:
+        print(f"[DB] 記録エラー（続行）: {e}")
+
     result = PipelineResult(
         topic         = script.raw_topic,
         title         = script.title,

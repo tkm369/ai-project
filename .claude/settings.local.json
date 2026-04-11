@@ -278,7 +278,28 @@
       "Bash(powershell -Command \"& 'C:\\\\qwen3tts-jp\\\\Qwen3-TTS-JP\\\\.venv\\\\Scripts\\\\pip.exe' install 'https://github.com/bdashore3/flash-attention/releases/download/v2.7.4.post1/flash_attn-2.7.4.post1+cu12torch2.5cxx11abiFALSE-cp311-cp311-win_amd64.whl' 2>&1\")",
       "Bash(powershell -Command \"gh run view 24247898763 --repo tkm369/sns-auto-poster 2>&1\")",
       "Bash(git rm:*)",
-      "WebFetch(domain:flashattn.dev)"
+      "WebFetch(domain:flashattn.dev)",
+      "Bash(/c/qwen3tts-jp/Qwen3-TTS-JP/.venv/Scripts/python.exe -c ':*)",
+      "Bash(powershell -Command \"gh run view --log --job=70814239016 2>&1 | Select-String 'OK:|ERROR:|skipped|STEP2'\")",
+      "Bash(powershell -Command \"Start-Sleep 240; gh run view 24256893888 --repo tkm369/sns-auto-poster 2>&1\")",
+      "Bash(powershell -Command \"gh run view --log --job=70830576403 2>&1 | Select-String 'OK:|ERROR:|INFO:投稿|INFO:待機|INFO:ボタン|INFO:確認'\")",
+      "Bash(python -X utf8 pdca_runner.py --status)",
+      "Bash(nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader)",
+      "Bash(python -X utf8 pipeline.py --topic \"守護霊のサイン\" --type message --script-only)",
+      "Bash(python -c \"import json; q=json.load\\(open\\('queue.json',encoding='utf-8'\\)\\); pending=[x for x in q if x.get\\('status'\\)=='pending']; print\\('pending:', len\\(pending\\)\\); [print\\(x.get\\('url',''\\)[:60], x.get\\('status'\\)\\) for x in q[-5:]]\")",
+      "Bash(grep -v \"^$\")",
+      "Bash(du -sh */ *.html *.py)",
+      "Bash(du -sh */ *.html *.py *.json)",
+      "Bash(du -sh */)",
+      "Bash(du -sh *)",
+      "Bash(find . -maxdepth 1 -type d \\\\\\( -name 'node_modules' -o -name 'venv' -o -name '.venv' -o -name '__pycache__' -o -name 'dist' -o -name 'build' \\\\\\) -exec basename {} \\\\;)",
+      "Bash(dir \"C:\\\\actions-runner\\\\_work\\\\ai-project\\\\ai-project\\\\tiktok_auto\\\\screenshots\")",
+      "Bash(dir \"C:\\\\\\\\actions-runner\\\\\\\\_work\\\\\\\\ai-project\\\\\\\\ai-project\\\\\\\\tiktok_auto\")",
+      "Bash(dir \"C:\\\\\\\\actions-runner\\\\\\\\_work\\\\\\\\ai-project\\\\\\\\ai-project\\\\\\\\tiktok_auto\\\\\\\\screenshots\")",
+      "Bash(powershell \"Get-ChildItem 'C:\\\\actions-runner\\\\_work\\\\ai-project\\\\ai-project\\\\tiktok_auto\\\\' | Select-Object Name\")",
+      "Bash(dir C:\\\\actions-runner)",
+      "Bash(powershell \"Get-ChildItem 'C:\\\\actions-runner' | Select-Object Name\")",
+      "Bash(powershell \"Get-ScheduledTask -TaskName 'GitHubActionsRunner' | Select-Object TaskName, State\")"
     ]
   }
 }

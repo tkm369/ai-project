@@ -11,6 +11,29 @@ load_dotenv(Path(__file__).parent / ".env")
 ANTHROPIC_API_KEY   = os.getenv("ANTHROPIC_API_KEY", "")
 PEXELS_API_KEY      = os.getenv("PEXELS_API_KEY", "")
 
+# Gemini（無料枠: gemini-2.0-flash で1日1500回）
+# eroge_generator の .env からも自動読み込み
+def _load_gemini_key() -> str:
+    key = os.getenv("GEMINI_API_KEY", "")
+    if not key:
+        # 隣接プロジェクトの .env から探す
+        for sibling in [
+            Path(__file__).parent.parent / "eroge_generator" / ".env",
+            Path(__file__).parent.parent / "sns_auto_poster" / ".env",
+        ]:
+            if sibling.exists():
+                for line in sibling.read_text(encoding="utf-8").splitlines():
+                    if line.startswith("GEMINI_API_KEY="):
+                        found = line.split("=", 1)[1].strip()
+                        if found and found != "ここにキーを貼り付け":
+                            return found
+    return key
+
+GEMINI_API_KEY = _load_gemini_key()
+
+# LLMバックエンド: "gemini"（無料）or "claude"（有料・高品質）
+LLM_BACKEND = os.getenv("LLM_BACKEND", "gemini" if GEMINI_API_KEY else "claude")
+
 # ── TTS ───────────────────────────────────────────────
 TTS_ENGINE          = os.getenv("TTS_ENGINE", "edge")           # "edge" or "qwen3"
 EDGE_TTS_VOICE      = os.getenv("EDGE_TTS_VOICE", "ja-JP-NanamiNeural")

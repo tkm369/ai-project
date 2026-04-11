@@ -8,9 +8,7 @@ import re
 from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 
-import anthropic
-
-from config import ANTHROPIC_API_KEY
+from config import ANTHROPIC_API_KEY, GEMINI_API_KEY, LLM_BACKEND
 
 if TYPE_CHECKING:
     from video_types import VideoType
@@ -61,12 +59,40 @@ class ScriptResult:
     video_type_id:     str = "education"
 
 
+def _call_llm(system_prompt: str, user_msg: str, model: Optional[str] = None) -> str:
+    """LLMバックエンドを自動選択してテキストを返す"""
+    backend = LLM_BACKEND
+
+    if backend == "gemini" and GEMINI_API_KEY:
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_API_KEY)
+        m = model or "gemini-2.0-flash"
+        gm = genai.GenerativeModel(
+            model_name   = m,
+            system_instruction = system_prompt,
+        )
+        resp = gm.generate_content(user_msg)
+        return resp.text.strip()
+
+    # fallback: Claude
+    import anthropic
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    m = model or "claude-opus-4-6"
+    message = client.messages.create(
+        model     = m,
+        max_tokens= 4096,
+        system    = system_prompt,
+        messages  = [{"role": "user", "content": user_msg}],
+    )
+    return message.content[0].text.strip()
+
+
 def generate_script(
     topic: str,
     video_type: Optional["VideoType"] = None,
     duration_min: Optional[int] = None,
     extra: str = "",
-    model: str = "claude-opus-4-6",
+    model: Optional[str] = None,
     is_shorts: bool = False,
 ) -> ScriptResult:
     """
@@ -119,15 +145,8 @@ def generate_script(
         desc_note        = desc_note,
     )
 
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    message = client.messages.create(
-        model     = model,
-        max_tokens= 4096,
-        system    = system_prompt,
-        messages  = [{"role": "user", "content": user_msg}],
-    )
-
-    raw = message.content[0].text.strip()
+    print(f"[Script] LLMバックエンド: {LLM_BACKEND}")
+    raw = _call_llm(system_prompt, user_msg, model=model)
 
     # JSON部分を抽出（```json ... ``` ブロック or 生JSON）
     json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", raw, re.DOTALL)
