@@ -34,7 +34,7 @@ POST_TIMES = ["09:00", "15:00", "21:00"]
 
 # ---- PDCA自動最適化パラメータ（strategy_optimizer.pyが更新）----
 # 動画の長さ（秒）
-VIDEO_DURATION = 7.0
+VIDEO_DURATION = 30.0
 # コンテンツスタイルのヒント（Gemini改良プロンプトに追加される）
 CONTENT_STYLE_HINT = ""  # 例: "感情に寄り添う共感系が伸びている。体験談・告白スタイルを意識して。"
 
