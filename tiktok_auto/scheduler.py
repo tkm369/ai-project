@@ -19,6 +19,7 @@ import os
 import sys
 import json
 import time
+import hashlib
 import logging
 import argparse
 from datetime import datetime
@@ -108,20 +109,24 @@ def mark_item(url: str, status: str):
 
 POSTS_LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "posts_log.json")
 
+def _load_posts_log() -> list:
+    """posts_log.jsonを読み込む"""
+    if os.path.exists(POSTS_LOG_FILE):
+        with open(POSTS_LOG_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
 def _log_post(post_id: str, source_url: str, text: str, posted_at: str,
               text_length: int = 0, posting_hour: int = 0,
               source_hashtag: str = "", video_duration: float = 7.0):
     """投稿メタデータをposts_log.jsonに記録"""
-    if os.path.exists(POSTS_LOG_FILE):
-        with open(POSTS_LOG_FILE, "r", encoding="utf-8") as f:
-            log = json.load(f)
-    else:
-        log = []
+    log = _load_posts_log()
     log.append({
         "id": post_id,
         "posted_at": posted_at,
         "source_url": source_url,
         "text": text,
+        "text_hash": hashlib.md5(text.strip().encode("utf-8")).hexdigest(),
         "text_length": text_length,
         "posting_hour": posting_hour,
         "source_hashtag": source_hashtag,
@@ -174,6 +179,14 @@ def run_post_job():
 
         if not is_valid_post(post_text):
             logger.warning(f"Gemini判定NG: 不適切なテキストのためスキップ → {post_text[:50]}")
+            mark_item(url, "skipped")
+            return
+
+        # テキストハッシュで重複チェック（同じ内容が過去に投稿済みならスキップ）
+        text_hash = hashlib.md5(post_text.strip().encode("utf-8")).hexdigest()
+        posted_hashes = {p.get("text_hash") for p in _load_posts_log()}
+        if text_hash in posted_hashes:
+            logger.warning(f"同一テキストが既に投稿済みのためスキップ: {post_text[:40]}")
             mark_item(url, "skipped")
             return
 
