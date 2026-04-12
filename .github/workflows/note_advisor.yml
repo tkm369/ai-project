@@ -1,0 +1,66 @@
+name: Note Advisor
+
+permissions:
+  contents: write
+
+"on":
+  schedule:
+    - cron: '0 1 * * 0'  # 毎週日曜 JST 10:00 に自動分析
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'weekly_analysis または article_generation'
+        required: true
+        default: 'weekly_analysis'
+      proposal_index:
+        description: '記事生成する提案番号（article_generationの場合）'
+        required: false
+        default: '1'
+
+jobs:
+  advise:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Python 3.11 セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 依存ライブラリをインストール
+        run: pip install -r sns_auto_poster/requirements.txt
+
+      - name: Note Advisor 実行
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          AFFILIATE_LINK: ${{ secrets.AFFILIATE_LINK }}
+        run: |
+          cd sns_auto_poster
+          python -c "
+          import sys
+          mode = '${{ github.event.inputs.mode }}' or 'weekly_analysis'
+          idx = int('${{ github.event.inputs.proposal_index }}' or '1')
+          from note_advisor import run_weekly_analysis, run_article_generation
+          if mode == 'article_generation':
+              run_article_generation(idx)
+          else:
+              run_weekly_analysis()
+          "
+
+      - name: 提案ファイルをコミット
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add sns_auto_poster/note_proposals.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "chore: Note提案更新 [skip ci]"
+          git stash || true
+          git pull --rebase origin master
+          git stash pop || true
+          git push
