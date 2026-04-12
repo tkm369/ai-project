@@ -9,7 +9,7 @@ permissions:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'weekly_analysis または article_generation'
+        description: 'weekly_analysis / article_generation / audience_analysis'
         required: true
         default: 'weekly_analysis'
       proposal_index:
@@ -47,9 +47,11 @@ jobs:
           import sys
           mode = '${{ github.event.inputs.mode }}' or 'weekly_analysis'
           idx = int('${{ github.event.inputs.proposal_index }}' or '1')
-          from note_advisor import run_weekly_analysis, run_article_generation
+          from note_advisor import run_weekly_analysis, run_article_generation, run_audience_analysis
           if mode == 'article_generation':
               run_article_generation(idx)
+          elif mode == 'audience_analysis':
+              run_audience_analysis()
           else:
               run_weekly_analysis()
           "

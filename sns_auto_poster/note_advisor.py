@@ -252,10 +252,137 @@ def notify_note_article(proposal_index: int, article: str, proposal: dict):
 
 
 # ─────────────────────────────────────────
+# オーディエンス分析
+# ─────────────────────────────────────────
+def analyze_audience(top_posts: list, follower_count: int) -> dict:
+    """エンゲージデータからオーディエンス像を分析してDiscordに送信"""
+    from google import genai
+    from collections import Counter
+    client = genai.Client(api_key=GEMINI_API_KEY)
+
+    log = load_log()
+    jst = pytz.timezone("Asia/Tokyo")
+
+    # ── 基本統計 ──
+    posts_with_metrics = [p for p in log if p.get("metrics") and p.get("platform") == "threads"]
+    total_views = sum(p["metrics"].get("views", 0) for p in posts_with_metrics)
+    total_likes = sum(p["metrics"].get("likes", 0) for p in posts_with_metrics)
+    total_posts = len(posts_with_metrics)
+
+    # ── 時間帯別エンゲージ ──
+    slot_scores = Counter()
+    slot_counts = Counter()
+    for p in posts_with_metrics:
+        slot = p.get("time_slot", "??")
+        views = p["metrics"].get("views", 0)
+        likes = p["metrics"].get("likes", 0)
+        slot_scores[slot] += views + likes * 5
+        slot_counts[slot] += 1
+    best_slots = sorted(slot_scores, key=slot_scores.get, reverse=True)[:3]
+
+    # ── 投稿タイプ別平均views ──
+    type_views = {}
+    for p in posts_with_metrics:
+        pt = p.get("post_type") or ("image_text" if p.get("has_image") else "text_only")
+        if pt not in type_views:
+            type_views[pt] = []
+        type_views[pt].append(p["metrics"].get("views", 0))
+    type_avg = {k: round(sum(v)/len(v), 1) for k, v in type_views.items() if v}
+
+    # ── 文字数カテゴリ別 ──
+    len_views = {}
+    for p in posts_with_metrics:
+        lc = p.get("length_category", "unknown")
+        if lc not in len_views:
+            len_views[lc] = []
+        len_views[lc].append(p["metrics"].get("views", 0))
+    len_avg = {k: round(sum(v)/len(v), 1) for k, v in len_views.items() if v}
+
+    # ── Geminiでオーディエンス像を分析 ──
+    top5_text = "\n".join([
+        f"- [{p['views']}views {p['likes']}likes] {p['text'][:100]}"
+        for p in top_posts[:5]
+    ])
+    slot_str = ", ".join([f"{s}時台" for s in best_slots])
+    type_str = ", ".join([f"{k}:{v}views平均" for k, v in type_avg.items()])
+    len_str = ", ".join([f"{k}:{v}views平均" for k, v in len_avg.items()])
+
+    prompt = f"""Threadsのスピリチュアル系アカウントのデータを分析してください。
+
+【高エンゲージ投稿トップ5】
+{top5_text}
+
+【データ】
+- 総投稿数: {total_posts}件
+- 総views: {total_views} / 総likes: {total_likes}
+- 反応が良い時間帯: {slot_str}
+- 投稿タイプ別views: {type_str}
+- 文字数別views: {len_str}
+- フォロワー数: {follower_count}人
+
+以下の4点を分析してください：
+
+1. **ターゲット像**（年齢層・性別・どんな悩みを持つ人か）
+2. **刺さるコンテンツの特徴**（どんなテーマ・言葉・トーンが響いているか）
+3. **最適な投稿戦略**（時間帯・文字数・投稿タイプの推奨）
+4. **今後伸ばすべき方向性**（どんなコンテンツを増やすべきか）
+
+各項目を3〜4行で、具体的なデータを引用しながら分析してください。"""
+
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.0-flash", contents=prompt
+        )
+        analysis_text = response.text.strip()
+    except Exception as e:
+        analysis_text = f"AI分析失敗: {e}"
+
+    # ── Discord送信 ──
+    stats_summary = (
+        f"総投稿: {total_posts}件 | 総views: {total_views} | 総likes: {total_likes}\n"
+        f"平均views/投稿: {round(total_views/total_posts, 1) if total_posts else 0} | "
+        f"フォロワー: {follower_count}人\n"
+        f"反応良い時間帯: {slot_str}"
+    )
+
+    # 長い場合は分割
+    chunks = [analysis_text[i:i+900] for i in range(0, len(analysis_text), 900)]
+
+    fields = [{"name": "📈 基本データ", "value": stats_summary}]
+    for i, chunk in enumerate(chunks):
+        label = "🔍 オーディエンス分析" if i == 0 else "　（続き）"
+        fields.append({"name": label, "value": chunk})
+
+    payload = {
+        "embeds": [{
+            "title": f"👥 オーディエンス分析レポート",
+            "color": 0xE74C3C,
+            "fields": fields,
+            "footer": {"text": datetime.now(jst).strftime("%Y-%m-%d 更新")},
+        }]
+    }
+    _send(payload)
+    print("  Discord にオーディエンス分析を送信しました")
+
+    return {"total_posts": total_posts, "total_views": total_views}
+
+
+# ─────────────────────────────────────────
 # メイン実行
 # ─────────────────────────────────────────
+def run_audience_analysis():
+    """オーディエンス分析のみ実行（毎月など定期的に）"""
+    print("\n=== オーディエンス分析 ===")
+    follower_count = fetch_follower_count()
+    top_posts = get_top_posts_for_note()
+    if not top_posts:
+        print("  エンゲージデータ不足 → スキップ")
+        return
+    analyze_audience(top_posts, follower_count)
+
+
 def run_weekly_analysis():
-    """週次分析・提案生成（GitHub Actionsから呼ぶ）"""
+    """週次分析・提案生成 + オーディエンス分析（GitHub Actionsから呼ぶ）"""
     print("\n=== Note販売アドバイザー ===")
 
     follower_count = fetch_follower_count()
@@ -265,7 +392,10 @@ def run_weekly_analysis():
         print("  エンゲージデータ不足 → スキップ")
         return
 
+    # オーディエンス分析（週次で一緒に送る）
     print(f"  分析対象: {len(top_posts)}件の投稿")
+    analyze_audience(top_posts, follower_count)
+
     proposals = generate_note_proposals(top_posts, follower_count)
 
     if proposals:
