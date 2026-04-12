@@ -18,7 +18,7 @@ def safe_print(*args, **kwargs):
 
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 DEBUG_PROFILE = r"C:\tiktok_debug_profile"
-CDP_PORT = 9225  # get_session.py(9224)と別ポート
+CDP_PORT = 9223
 
 
 def get_cookies():
@@ -79,30 +79,28 @@ def release_profile_lock(profile_dir):
 
 
 def run(video_path: str, caption: str):
-    import tempfile, pathlib, urllib.request as _ureq
+    import urllib.request as _ureq
     cookies = get_cookies()
     if not any(c["name"] == "sessionid" for c in cookies):
         safe_print("ERROR:TIKTOK_SESSION_ID未設定", flush=True)
         sys.exit(1)
 
-    # プロファイルロック競合を避けるため毎回一時プロファイルを使う
-    tmp_profile = tempfile.mkdtemp(prefix="tiktok_upload_")
-    safe_print(f"INFO:一時プロファイル: {tmp_profile}", flush=True)
-
+    # get_session.pyが起動したChrome（同プロファイル）を確実に終了させる
+    kill_chrome_holding_profile(DEBUG_PROFILE)
     kill_port(CDP_PORT)
+    time.sleep(2)  # プロファイルロック解放待ち
+    release_profile_lock(DEBUG_PROFILE)
 
     chrome_proc = subprocess.Popen([
         CHROME_PATH,
         f"--remote-debugging-port={CDP_PORT}",
-        f"--user-data-dir={tmp_profile}",
+        f"--user-data-dir={DEBUG_PROFILE}",
         "--no-first-run",
         "--no-default-browser-check",
         "--disable-extensions",
         "--no-restore-session-state",
         "--disable-session-crashed-bubble",
         "--hide-crash-restore-bubble",
-        "--disable-background-networking",
-        "--disable-sync",
         "about:blank",
     ])
     # Chromeが起動してCDPポートが開くまで待つ（最大30秒）
@@ -363,12 +361,6 @@ def run(video_path: str, caption: str):
             pass
         try:
             chrome_proc.kill()
-        except Exception:
-            pass
-        # 一時プロファイルを削除
-        try:
-            import shutil
-            shutil.rmtree(tmp_profile, ignore_errors=True)
         except Exception:
             pass
 

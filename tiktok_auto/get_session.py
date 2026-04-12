@@ -100,11 +100,18 @@ def get_session_id():
 
         return None
     finally:
-        proc.terminate()
+        # Chrome子プロセスも含めてツリーkill
         try:
-            proc.wait(timeout=5)
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                timeout=5, capture_output=True
+            )
         except Exception:
-            proc.kill()
+            pass
+        try:
+            proc.wait(timeout=3)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
