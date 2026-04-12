@@ -36,8 +36,8 @@ tiktok_auto/preview_*.png
 tiktok_auto/preview_*.mp4
 tiktok_auto/*.lnk
 
-# 生成画像（GitHubに上げても容量の無駄）
-sns_auto_poster/generated_images/
+# 生成画像（*.pngはGitHub raw URLとして使用するためトラッキング対象）
+# sns_auto_poster/generated_images/ ← 意図的にコメントアウト
 
 # 別リポジトリ
 qwen3_tts/
