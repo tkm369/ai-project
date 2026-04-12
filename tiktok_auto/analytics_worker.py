@@ -60,83 +60,73 @@ def collect():
         page.goto(TIKTOK_STUDIO_URL, wait_until="domcontentloaded", timeout=30000)
         time.sleep(5)
 
-        # 動画リストを取得
+        # 動画リストを取得（CSSセレクタに依存しないテキストパース方式）
         analytics = []
         try:
-            # TikTok Studioの動画カードを取得
-            videos = page.evaluate("""() => {
-                const results = [];
-                // 動画アイテムを探す
-                const items = document.querySelectorAll('[class*="video-card"], [class*="content-item"], [data-e2e="video-card"]');
-                items.forEach(item => {
-                    try {
-                        const text = item.innerText;
-                        const lines = text.split('\\n').map(l => l.trim()).filter(l => l);
+            import re
+            from datetime import datetime
 
-                        // 数字を含む行を探す（再生数・いいね数）
-                        const nums = lines.filter(l => /^[\\d\\.KMk万]+$/.test(l.replace(/,/g, '')));
+            page_text = page.evaluate("() => document.body.innerText")
 
-                        // 日付を探す
-                        const datePattern = /\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}|\\d{1,2}[-/]\\d{1,2}[-/]\\d{4}/;
-                        const dateLine = lines.find(l => datePattern.test(l));
-
-                        if (nums.length > 0) {
-                            results.push({
-                                raw_text: text.substring(0, 200),
-                                numbers: nums,
-                                date_text: dateLine || '',
-                            });
-                        }
-                    } catch(e) {}
-                });
-                return results;
-            }""")
-
-            if not videos:
-                # 別のセレクタを試す
-                page_text = page.evaluate("""() => document.body.innerText""")
-                safe_print(f"PAGE_TEXT:{page_text[:500]}", flush=True)
-
-            for v in videos[:20]:
-                # 数字を解析（K=千、M=百万）
-                def parse_num(s):
-                    s = s.strip().replace(',', '')
+            def parse_num(s):
+                s = str(s).strip().replace(',', '')
+                try:
                     if s.endswith('K') or s.endswith('k'):
                         return int(float(s[:-1]) * 1000)
                     if s.endswith('M') or s.endswith('m'):
                         return int(float(s[:-1]) * 1000000)
-                    if s.endswith('万'):
-                        return int(float(s[:-1]) * 10000)
-                    try:
-                        return int(s)
-                    except:
-                        return None
+                    if '万' in s:
+                        return int(float(s.replace('万', '')) * 10000)
+                    return int(s)
+                except Exception:
+                    return None
 
-                nums = [parse_num(n) for n in v.get('numbers', []) if parse_num(n) is not None]
-                date_text = v.get('date_text', '')
+            # 日付パターン: "Dec 18, 2024" or "2024-12-18" or "12/18/2024"
+            date_pattern = re.compile(
+                r'(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}'
+                r'|\d{4}[-/]\d{1,2}[-/]\d{1,2}'
+                r'|\d{1,2}[-/]\d{1,2}[-/]\d{4}'
+            )
+            # 数値パターン（再生数・いいね数）: 数字のみ or K/M/万付き
+            num_pattern = re.compile(r'^[\d,]+(?:\.\d+)?[KkMm万]?$')
 
-                # 日付をパース
-                import re
-                from datetime import datetime
-                created_at = None
-                date_match = re.search(r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})', date_text)
+            lines = [l.strip() for l in page_text.split('\n') if l.strip()]
+
+            i = 0
+            while i < len(lines):
+                date_match = date_pattern.search(lines[i])
                 if date_match:
-                    try:
-                        created_at = datetime(
-                            int(date_match.group(1)),
-                            int(date_match.group(2)),
-                            int(date_match.group(3))
-                        ).isoformat()
-                    except:
-                        pass
+                    date_str = date_match.group(0)
+                    created_at = None
+                    # 日付パース
+                    for fmt in ('%b %d, %Y', '%Y-%m-%d', '%Y/%m/%d', '%m/%d/%Y', '%d/%m/%Y'):
+                        try:
+                            created_at = datetime.strptime(date_str.strip(), fmt).isoformat()
+                            break
+                        except Exception:
+                            pass
 
-                if nums and created_at:
-                    analytics.append({
-                        "created_at": created_at,
-                        "views": nums[0] if len(nums) > 0 else None,
-                        "likes": nums[1] if len(nums) > 1 else None,
-                        "comments": nums[2] if len(nums) > 2 else None,
-                    })
+                    if created_at:
+                        # 日付の前後10行以内で数値を探す
+                        window = lines[max(0, i-5):min(len(lines), i+10)]
+                        nums = []
+                        for w in window:
+                            w_clean = w.replace(',', '')
+                            if num_pattern.match(w_clean):
+                                n = parse_num(w_clean)
+                                if n is not None and n >= 0:
+                                    nums.append(n)
+
+                        if len(nums) >= 2:
+                            analytics.append({
+                                "created_at": created_at,
+                                "views":    nums[0],
+                                "likes":    nums[1] if len(nums) > 1 else None,
+                                "comments": nums[2] if len(nums) > 2 else None,
+                            })
+                i += 1
+
+            safe_print(f"INFO:動画 {len(analytics)}件のアナリティクスを取得", flush=True)
 
         except Exception as e:
             safe_print(f"ERROR:{e}", flush=True)
