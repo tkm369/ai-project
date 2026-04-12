@@ -129,5 +129,20 @@
     "likes": null,
     "comments": null,
     "last_checked": null
+  },
+  {
+    "id": "20260413_010229",
+    "posted_at": "2026-04-13T01:02:29.822729",
+    "text": "一番怖いのは、傷つくことじゃなくて、誰も好きになれなくなることだと気づいた。",
+    "text_hash": "fe31a00fb68b518799fd283a3cfc3ac2",
+    "category": "恋愛名言",
+    "tone": "共感型",
+    "format": "独白",
+    "posting_hour": 1,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "last_checked": null
   }
 ]
