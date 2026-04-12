@@ -221,8 +221,11 @@ def decide_pure_image_style():
     all_ready = all(stats.get(s, {}).get("count", 0) >= AB_MIN_SAMPLES for s in ALL_PURE_STYLES)
 
     if not all_ready:
-        least = min(ALL_PURE_STYLES, key=lambda s: stats.get(s, {}).get("count", 0))
         counts = {s: stats.get(s, {}).get("count", 0) for s in ALL_PURE_STYLES}
+        min_count = min(counts.values())
+        # 最少カウントのスタイルが複数あればランダム選択（同じスタイルに偏らないように）
+        candidates = [s for s in ALL_PURE_STYLES if counts[s] == min_count]
+        least = random.choice(candidates)
         count_str = " ".join(f"{s}:{counts[s]}" for s in ALL_PURE_STYLES)
         print(f"  [A/B] 純粋画像スタイル探索中 ({count_str}) → {least}: {PURE_IMAGE_STYLES[least]['desc']}")
         return least
