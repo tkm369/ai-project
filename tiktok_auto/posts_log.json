@@ -114,5 +114,20 @@
     "likes": null,
     "comments": null,
     "last_checked": null
+  },
+  {
+    "id": "20260412_201612",
+    "posted_at": "2026-04-12T20:16:12.962547",
+    "text": "「元気だよ」って返せる自分になってから、連絡しようと思ってた。",
+    "text_hash": "833a548a005ea26135d2b6e6d0ac7813",
+    "category": "復縁",
+    "tone": "共感型",
+    "format": "独白",
+    "posting_hour": 20,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "last_checked": null
   }
 ]
