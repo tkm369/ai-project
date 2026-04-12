@@ -18,7 +18,7 @@ def safe_print(*args, **kwargs):
 
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 DEBUG_PROFILE = r"C:\tiktok_debug_profile"
-CDP_PORT = 9223
+CDP_PORT = 9225  # get_session.py(9224)と別ポート
 
 
 def get_cookies():
@@ -79,31 +79,34 @@ def release_profile_lock(profile_dir):
 
 
 def run(video_path: str, caption: str):
+    import tempfile, pathlib, urllib.request as _ureq
     cookies = get_cookies()
     if not any(c["name"] == "sessionid" for c in cookies):
         safe_print("ERROR:TIKTOK_SESSION_ID未設定", flush=True)
         sys.exit(1)
 
-    kill_chrome_holding_profile(DEBUG_PROFILE)
+    # プロファイルロック競合を避けるため毎回一時プロファイルを使う
+    tmp_profile = tempfile.mkdtemp(prefix="tiktok_upload_")
+    safe_print(f"INFO:一時プロファイル: {tmp_profile}", flush=True)
+
     kill_port(CDP_PORT)
-    release_profile_lock(DEBUG_PROFILE)
 
     chrome_proc = subprocess.Popen([
         CHROME_PATH,
         f"--remote-debugging-port={CDP_PORT}",
-        f"--remote-debugging-address=127.0.0.1",
-        f"--user-data-dir={DEBUG_PROFILE}",
+        f"--user-data-dir={tmp_profile}",
         "--no-first-run",
         "--no-default-browser-check",
         "--disable-extensions",
         "--no-restore-session-state",
         "--disable-session-crashed-bubble",
         "--hide-crash-restore-bubble",
+        "--disable-background-networking",
+        "--disable-sync",
         "about:blank",
     ])
-    # Chromeが起動してCDPポートが開くまで待つ
-    import urllib.request as _ureq
-    for _wait in range(15):
+    # Chromeが起動してCDPポートが開くまで待つ（最大30秒）
+    for _wait in range(30):
         time.sleep(1)
         try:
             _ureq.urlopen(f"http://127.0.0.1:{CDP_PORT}/json/version", timeout=2)
@@ -360,6 +363,12 @@ def run(video_path: str, caption: str):
             pass
         try:
             chrome_proc.kill()
+        except Exception:
+            pass
+        # 一時プロファイルを削除
+        try:
+            import shutil
+            shutil.rmtree(tmp_profile, ignore_errors=True)
         except Exception:
             pass
 
