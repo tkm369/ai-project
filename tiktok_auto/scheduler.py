@@ -174,7 +174,15 @@ def run_post_job():
         # 1) テキスト取得 → X風カード生成
         logger.info("1/3 テキスト取得・カード生成中...")
         _t = _time.time()
-        post_text = extract_text_from_post(url)
+        try:
+            post_text = extract_text_from_post(url)
+        except RuntimeError as e:
+            err_str = str(e)
+            if "IMAGE_POST" in err_str:
+                logger.warning(f"画像メイン投稿のためスキップ: {url}")
+                mark_item(url, "skipped")
+                return
+            raise
         logger.info(f"【元テキスト】{post_text}")
 
         if not is_valid_post(post_text):

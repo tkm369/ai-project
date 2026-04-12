@@ -139,6 +139,9 @@ def extract_text_from_post(url: str) -> str:
             errors="replace",
         )
         output = result.stdout.strip()
+        # 画像メインの投稿はスキップ
+        if "IMAGE_POST" in output:
+            raise RuntimeError("IMAGE_POST:画像メインの投稿のためスキップ")
         # TEXT: 以降の全テキストを取得（改行含む投稿に対応）
         if "TEXT:" in output:
             idx = output.index("TEXT:")

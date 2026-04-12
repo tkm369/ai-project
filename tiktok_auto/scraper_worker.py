@@ -58,13 +58,24 @@ def extract_text(url: str) -> str:
 
             # テキスト抽出 (JavaScript で dir=auto のspan要素から取得)
             text = ""
+            has_image = False
             try:
-                texts = page.evaluate("""() => {
-                    // 最初のarticle要素内のspanだけを対象にする（本文エリア）
+                result = page.evaluate("""() => {
                     const article = document.querySelector('article');
                     const container = article || document;
+
+                    // 画像・動画があるか検出（スクリーンショット/画像メイン投稿を判定）
+                    const imgs = container.querySelectorAll('img[src*="cdninstagram"], img[src*="fbcdn"], img[src*="threads"]');
+                    const videos = container.querySelectorAll('video');
+                    // アバター画像を除く（小さい画像はアバター）
+                    const contentImgs = Array.from(imgs).filter(img => {
+                        const rect = img.getBoundingClientRect();
+                        return rect.width > 100 && rect.height > 100;
+                    });
+                    const hasImage = contentImgs.length > 0 || videos.length > 0;
+
                     const spans = container.querySelectorAll("span[dir='auto']");
-                    return Array.from(spans)
+                    const texts = Array.from(spans)
                         .map(s => {
                             let t = s.innerText.trim();
                             t = t.replace(/\\s*\\n?Translate\\s*$/, '').replace(/\\s*\\n?Related\\s*$/, '').trim();
@@ -76,11 +87,17 @@ def extract_text(url: str) -> str:
                             if (!hasJapanese) return false;
                             return true;
                         });
+                    return { texts, hasImage };
                 }""")
-                if texts:
-                    text = texts[0]  # article内の最初の日本語テキスト＝本文
+                if result.get("texts"):
+                    text = result["texts"][0]
+                has_image = result.get("hasImage", False)
             except Exception:
                 pass
+
+            if has_image:
+                print("ERROR:IMAGE_POST", flush=True)
+                sys.exit(1)
 
             if text:
                 print(f"TEXT:{text}", flush=True)
