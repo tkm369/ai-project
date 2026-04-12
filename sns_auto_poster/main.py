@@ -273,11 +273,6 @@ def generate_mode():
         post_content, score = get_best_post(platform="threads", target_chars=target_chars)
     except Exception as e:
         err_str = str(e)
-        if "RESOURCE_EXHAUSTED" in err_str or "quota" in err_str.lower() or "429" in err_str:
-            print(f"⚠️  Gemini APIの日次クォータを超過しました")
-            notify_quota_exceeded()
-            _save_pending({"skip": True, "reason": "Gemini quota exceeded"})
-            return
         notify_error(f"generate_mode エラー: {err_str[:500]}")
         raise
 

@@ -341,13 +341,27 @@ def improve_post(post, platform="x", target_chars=None):
 
 
 def get_best_post(platform="x", target_chars=None):
-    """生成→スコアリング→改善の全フローを実行（API呼び出し2回）"""
+    """生成→スコアリング→改善の全フローを実行（API呼び出し2回）
+    Gemini quota超過時はフォールバックテンプレートを使用して必ず投稿できるようにする
+    """
     print(f"  [{platform}] 投稿案を生成・スコアリング中...")
 
-    top_posts = get_top_posts(n=3, has_affiliate=bool(AFFILIATE_LINK))
-    best_post, score = generate_and_score_posts(platform, top_posts=top_posts, target_chars=target_chars)
+    try:
+        top_posts = get_top_posts(n=3, has_affiliate=bool(AFFILIATE_LINK))
+        best_post, score = generate_and_score_posts(platform, top_posts=top_posts, target_chars=target_chars)
+        print(f"  [{platform}] 投稿を改善中...")
+        final_post = improve_post(best_post, platform, target_chars=target_chars)
+        return final_post, score
 
-    print(f"  [{platform}] 投稿を改善中...")
-    final_post = improve_post(best_post, platform, target_chars=target_chars)
-
-    return final_post, score
+    except Exception as e:
+        err_str = str(e)
+        is_quota = (
+            "PerDay" in err_str or "per_day" in err_str.lower()
+            or "GenerateRequestsPerDay" in err_str
+            or "RESOURCE_EXHAUSTED" in err_str or "quota" in err_str.lower()
+        )
+        if is_quota:
+            print(f"  ⚠️  Gemini quota超過 → フォールバックテンプレートを使用")
+            from fallback_posts import get_fallback_post
+            return get_fallback_post(), 70  # スコア70として扱う
+        raise

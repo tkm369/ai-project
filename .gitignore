@@ -47,3 +47,4 @@ qwen3_tts/
 *.mp3
 *.wav
 tmp_*.json
+sns_auto_poster/fallback_used.json
