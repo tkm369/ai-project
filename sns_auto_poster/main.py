@@ -29,8 +29,36 @@ PENDING_POST_FILE = os.path.join(os.path.dirname(__file__), "pending_post.json")
 IMAGES_DIR = os.path.join(os.path.dirname(__file__), "generated_images")
 
 
+MIN_POST_INTERVAL_HOURS = 3  # 最低投稿間隔（時間）- スパム判定回避
+
+def _get_last_post_hours_ago() -> float:
+    """直近の投稿から何時間経過したか返す（投稿なしの場合は999）"""
+    from logger import load_log
+    import pytz
+    log = load_log()
+    jst = pytz.timezone("Asia/Tokyo")
+    now = datetime.now(jst)
+    threads_posts = [p for p in log if p.get("platform") == "threads" and p.get("timestamp")]
+    if not threads_posts:
+        return 999
+    try:
+        last = max(threads_posts, key=lambda p: p["timestamp"])
+        last_time = datetime.fromisoformat(last["timestamp"])
+        if last_time.tzinfo is None:
+            last_time = jst.localize(last_time)
+        diff = (now - last_time).total_seconds() / 3600
+        return diff
+    except Exception:
+        return 999
+
+
 def should_post_now(time_slot):
     """今この時間帯に投稿すべきか判断する（PDCAベース）"""
+    # 直近投稿から最低3時間経過していなければスキップ（スパム判定回避）
+    hours_ago = _get_last_post_hours_ago()
+    if hours_ago < MIN_POST_INTERVAL_HOURS:
+        return False, f"直近の投稿から{hours_ago:.1f}時間しか経過していません（最低{MIN_POST_INTERVAL_HOURS}時間必要）"
+
     posts_today = count_posts_today()
     today_limit = get_today_post_limit()
     if posts_today >= today_limit:
