@@ -847,5 +847,21 @@
     "pure_image_style": "pure_moon",
     "metrics": null,
     "metrics_collected": false
+  },
+  {
+    "id": "18097829102004955",
+    "platform": "threads",
+    "timestamp": "2026-04-14T01:47:15.926283+09:00",
+    "content": "別れは終わりじゃない。\n新しい自分に出会うための、始まり。\n今のあなたには、まだ見えていない素晴らしい未来がある。",
+    "time_slot": "00",
+    "has_affiliate": false,
+    "has_image": true,
+    "image_style": null,
+    "image_content_pattern": null,
+    "length_category": "long",
+    "post_type": "pure_image",
+    "pure_image_style": "pure_moon",
+    "metrics": null,
+    "metrics_collected": false
   }
 ]
