@@ -863,5 +863,21 @@
     "pure_image_style": "pure_moon",
     "metrics": null,
     "metrics_collected": false
+  },
+  {
+    "id": "17944889826179397",
+    "platform": "threads",
+    "timestamp": "2026-04-14T05:44:19.478379+09:00",
+    "content": "今日という日は、二度と来ない。\n昨日より少しだけ、自分に優しくしてあげて。\nそれだけで十分。",
+    "time_slot": "04",
+    "has_affiliate": false,
+    "has_image": true,
+    "image_style": null,
+    "image_content_pattern": null,
+    "length_category": "long",
+    "post_type": "pure_image",
+    "pure_image_style": "pure_dragon",
+    "metrics": null,
+    "metrics_collected": false
   }
 ]
