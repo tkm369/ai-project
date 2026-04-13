@@ -1,13 +1,13 @@
 {
   "skip": false,
-  "content": "別れは終わりじゃない。\n新しい自分に出会うための、始まり。\n今のあなたには、まだ見えていない素晴らしい未来がある。",
+  "content": "今日という日は、二度と来ない。\n昨日より少しだけ、自分に優しくしてあげて。\nそれだけで十分。",
   "score": 70,
-  "time_slot": "00",
-  "image_filename": "20260414_014654_pure.png",
-  "image_url": "https://raw.githubusercontent.com/tkm369/sns-auto-poster/master/sns_auto_poster/generated_images/20260414_014654_pure.png",
+  "time_slot": "04",
+  "image_filename": "20260414_054400_pure.png",
+  "image_url": "https://raw.githubusercontent.com/tkm369/sns-auto-poster/master/sns_auto_poster/generated_images/20260414_054400_pure.png",
   "image_style": null,
   "image_content_pattern": null,
   "length_category": "long",
   "post_type": "pure_image",
-  "pure_image_style": "pure_moon"
+  "pure_image_style": "pure_dragon"
 }
