@@ -831,5 +831,21 @@
     "pure_image_style": "pure_shrine",
     "metrics": null,
     "metrics_collected": false
+  },
+  {
+    "id": "18198574735347147",
+    "platform": "threads",
+    "timestamp": "2026-04-13T21:02:17.721343+09:00",
+    "content": "焦って探すほど、見つからない。\n自分の人生を楽しんでいる時に、\n運命の人は現れる。",
+    "time_slot": "20",
+    "has_affiliate": false,
+    "has_image": true,
+    "image_style": null,
+    "image_content_pattern": null,
+    "length_category": "long",
+    "post_type": "pure_image",
+    "pure_image_style": "pure_moon",
+    "metrics": null,
+    "metrics_collected": false
   }
 ]
