@@ -895,5 +895,21 @@
     "pure_image_style": "pure_sunset_sea",
     "metrics": null,
     "metrics_collected": false
+  },
+  {
+    "id": "18101476553064686",
+    "platform": "threads",
+    "timestamp": "2026-04-14T16:18:14.628651+09:00",
+    "content": "深夜にふと目が覚めた時、それは偶然じゃないかもしれない。\n潜在意識があなたに何かを伝えようとしている。\n静かに、その声に耳を傾けて。",
+    "time_slot": "16",
+    "has_affiliate": false,
+    "has_image": true,
+    "image_style": null,
+    "image_content_pattern": null,
+    "length_category": "long",
+    "post_type": "pure_image",
+    "pure_image_style": "pure_dragon",
+    "metrics": null,
+    "metrics_collected": false
   }
 ]
