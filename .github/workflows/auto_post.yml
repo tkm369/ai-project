@@ -8,6 +8,10 @@ permissions:
     - cron: '0 */2 * * *'  # 2時間ごとに起動（1日の投稿数は3〜6でランダム）
   workflow_dispatch:        # GitHub上から手動実行も可能
 
+concurrency:
+  group: sns-auto-post
+  cancel-in-progress: false   # 実行中のものは完了させ、次のRunはキューで待機
+
 jobs:
   post:
     runs-on: ubuntu-latest
@@ -30,6 +34,9 @@ jobs:
 
       - name: 依存ライブラリをインストール
         run: pip install -r sns_auto_poster/requirements.txt
+
+      - name: 最新ログを取得（interval check用）
+        run: git pull --rebase origin master || true
 
       - name: 投稿コンテンツ・画像を生成
         env:
