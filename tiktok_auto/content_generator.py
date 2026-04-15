@@ -293,10 +293,16 @@ def generate_content(strategy: dict = None, posted_hashes: set = None) -> dict:
 
     category = pick_category(strategy)
     params   = strategy.get("generation_params", {})
-    tone     = params.get("tone", random.choice(TONES))
-    fmt      = params.get("format", random.choice(FORMATS))
     length_range = params.get("length_range", [50, 80])
     insights = strategy.get("insights", "")
+
+    # PDCAデータが蓄積されるまではtone/formatをランダムにしてA/Bテスト
+    if insights in ("データ蓄積中", "", None):
+        tone = random.choice(TONES)
+        fmt  = random.choice(FORMATS)
+    else:
+        tone = params.get("tone", random.choice(TONES))
+        fmt  = params.get("format", random.choice(FORMATS))
 
     insight_line = ""
     if insights and insights not in ("データ蓄積中", ""):

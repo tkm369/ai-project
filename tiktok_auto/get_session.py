@@ -24,7 +24,7 @@ def kill_existing_chrome_on_port():
         for line in result.stdout.splitlines():
             if f":{CDP_PORT}" in line and "LISTENING" in line:
                 pid = line.strip().split()[-1]
-                subprocess.run(["taskkill", "/F", "/PID", pid], timeout=5)
+                subprocess.run(["taskkill", "/F", "/PID", pid], timeout=5, capture_output=True)
                 time.sleep(1)
                 break
     except Exception:
@@ -40,7 +40,7 @@ def kill_existing_chrome_on_port():
         for line in result.stdout.splitlines():
             line = line.strip()
             if line.isdigit():
-                subprocess.run(["taskkill", "/F", "/PID", line], timeout=5)
+                subprocess.run(["taskkill", "/F", "/PID", line], timeout=5, capture_output=True)
         time.sleep(1)
     except Exception:
         pass

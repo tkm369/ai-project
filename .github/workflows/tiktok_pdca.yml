@@ -15,21 +15,27 @@ jobs:
     steps:
       - name: Reset workspace
         run: |
-          git rebase --abort 2>/dev/null
-          if exist .gitebase-merge rmdir /s /q .gitebase-merge 2>/dev/null
-          if exist .gitebase-apply rmdir /s /q .gitebase-apply 2>/dev/null
-          git reset --hard HEAD 2>/dev/null
-          git clean -fd 2>/dev/null
+          git config --global --add safe.directory C:/actions-runner/_work/ai-project/ai-project
+          git rebase --abort 2>nul
+          if exist .git\rebase-merge rmdir /s /q .git\rebase-merge 2>nul
+          if exist .git\rebase-apply rmdir /s /q .git\rebase-apply 2>nul
+          git reset --hard HEAD 2>nul
+          git clean -fd 2>nul
           exit 0
         shell: cmd
 
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fetch TikTok session from Chrome
+      - name: Fetch TikTok session from file
         run: |
-          for /f "delims=" %%i in ('C:\qwen3tts-jp\Qwen3-TTS-JP\.venv\Scripts\python.exe tiktok_auto\get_session.py') do set SID=%%i
-          if "%SID%"=="NOT_FOUND" (echo [WARNING] sessionid not found) else if "%SID%"=="DECRYPT_FAIL" (echo [WARNING] decrypt failed) else (echo TIKTOK_SESSION_ID=%SID%>> %GITHUB_ENV%)
+          set /p SID=<C:\actions-runner\tiktok_session.txt
+          if "%SID%"=="" (echo [WARNING] session file empty) else (echo TIKTOK_SESSION_ID=%SID%>> %GITHUB_ENV%)
+        shell: cmd
+
+      - name: Ensure Playwright Chromium installed
+        run: |
+          C:\qwen3tts-jp\Qwen3-TTS-JP\.venv\Scripts\playwright.exe install chromium 2>nul || echo playwright install skipped
         shell: cmd
 
       - name: Collect metrics from TikTok Studio
@@ -48,12 +54,13 @@ jobs:
 
       - name: Commit PDCA results
         run: |
+          git config --global --add safe.directory C:/actions-runner/_work/ai-project/ai-project
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add tiktok_auto/posts_log.json tiktok_auto/strategy.json
           git diff --staged --quiet || git commit -m "chore: PDCA更新 [skip ci]"
           git fetch origin
-          if exist .gitebase-merge rmdir /s /q .gitebase-merge 2>/dev/null
+          if exist .git\rebase-merge rmdir /s /q .git\rebase-merge 2>nul
           git rebase origin/master
           git push
         shell: cmd
