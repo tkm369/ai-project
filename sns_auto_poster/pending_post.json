@@ -1,4 +1,13 @@
 {
-  "skip": true,
-  "reason": "直近の投稿から2.6時間しか経過していません（最低3時間必要）"
+  "skip": false,
+  "content": "今、あなたの心がふと「寂しい」と呟きましたね？\n\n「どうして私だけ？」完璧な笑顔の裏で、あなたはそっとため息をついていませんか？満たされない何かを感じ、自分だけが置き去りにされたような寂しさを抱えているのかもしれません。その胸の痛みは、決してあなたのせいではありません。\n\nでも、大丈夫。その感情は、あなたが深く、本物の愛を求めている尊い証拠です。無理に蓋をせず、今の自分を優しく受け入れてあげて。その瞬間、あなたの心の奥底に眠っていた温かい光が、ゆっくりと目覚め始め、新しい幸せへの扉が開きます。あなたの心は、もう一度、輝く準備ができています。\n\nこのメッセージ、あなたへのものかもしれません。",
+  "score": 83,
+  "time_slot": "14",
+  "image_filename": "20260415_152234_pure.png",
+  "image_url": "https://raw.githubusercontent.com/tkm369/sns-auto-poster/master/sns_auto_poster/generated_images/20260415_152234_pure.png",
+  "image_style": null,
+  "image_content_pattern": null,
+  "length_category": "long",
+  "post_type": "pure_image",
+  "pure_image_style": "pure_sakura"
 }
