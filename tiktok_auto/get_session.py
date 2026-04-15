@@ -1,6 +1,6 @@
 """
 TikTokのセッションIDをCDP経由で取得する。
-Chrome を一時起動してデバッグポートからクッキーを読む。
+セッション延命のため、毎回TikTok.comを訪問してからCookieを読む。
 """
 import sys
 import subprocess
@@ -33,7 +33,6 @@ def kill_existing_chrome_on_port():
 def get_session_id():
     kill_existing_chrome_on_port()
 
-    # Chrome起動（ヘッドレス + デバッグポート）
     proc = subprocess.Popen(
         [
             CHROME_PATH,
@@ -65,14 +64,12 @@ def get_session_id():
         else:
             return None
 
-        # WebSocket URLを取得
         with urllib.request.urlopen(
             f"http://127.0.0.1:{CDP_PORT}/json/list", timeout=5
         ) as r:
             targets = json.loads(r.read())
 
         if not targets:
-            # 新しいタブを開く
             with urllib.request.urlopen(
                 f"http://127.0.0.1:{CDP_PORT}/json/new", timeout=5
             ) as r:
@@ -80,16 +77,24 @@ def get_session_id():
 
         ws_url = targets[0]["webSocketDebuggerUrl"]
 
-        # WebSocket で CDP コマンドを送る
-        import websocket  # websocket-client
+        import websocket
         ws = websocket.create_connection(ws_url, timeout=10)
 
+        # ★ セッション延命: TikTok.comを訪問してサーバー側のセッションを更新
         ws.send(json.dumps({
             "id": 1,
+            "method": "Page.navigate",
+            "params": {"url": "https://www.tiktok.com"}
+        }))
+        ws.recv()  # navigateの応答を受け取る
+        time.sleep(4)  # ページ読み込み待機（Cookieがセットされるまで）
+
+        # Cookieを取得
+        ws.send(json.dumps({
+            "id": 2,
             "method": "Network.getCookies",
             "params": {"urls": ["https://www.tiktok.com", "https://.tiktok.com"]}
         }))
-
         result = json.loads(ws.recv())
         ws.close()
 
@@ -100,7 +105,6 @@ def get_session_id():
 
         return None
     finally:
-        # Chrome子プロセスも含めてツリーkill
         try:
             subprocess.run(
                 ["taskkill", "/F", "/T", "/PID", str(proc.pid)],
