@@ -31,10 +31,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fetch TikTok session from Chrome
+      - name: Fetch TikTok session from file
         run: |
-          for /f "delims=" %%i in ('C:\qwen3tts-jp\Qwen3-TTS-JP\.venv\Scripts\python.exe tiktok_auto\get_session.py') do set SID=%%i
-          if "%SID%"=="NOT_FOUND" (echo [WARNING] sessionid not found in Chrome) else if "%SID%"=="DECRYPT_FAIL" (echo [WARNING] sessionid decrypt failed) else (echo TIKTOK_SESSION_ID=%SID%>> %GITHUB_ENV%)
+          set /p SID=<C:\actions-runner\tiktok_session.txt
+          if "%SID%"=="" (echo [WARNING] session file empty) else (echo TIKTOK_SESSION_ID=%SID%>> %GITHUB_ENV%)
         shell: cmd
 
       - name: Run post job
