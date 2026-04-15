@@ -174,5 +174,20 @@
     "likes": null,
     "comments": null,
     "last_checked": null
+  },
+  {
+    "id": "20260415_201604",
+    "posted_at": "2026-04-15T20:16:04.319290",
+    "text": "その人のことを考えると、自然と口角が上がってるらしい。",
+    "text_hash": "12d1ce03ae4fc1dbeb022610f5488079",
+    "category": "好きな人",
+    "tone": "共感型",
+    "format": "独白",
+    "posting_hour": 20,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "last_checked": null
   }
 ]
