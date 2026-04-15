@@ -78,6 +78,23 @@ def release_profile_lock(profile_dir):
             safe_print(f"INFO:{lock_name} 削除失敗: {e}", flush=True)
 
 
+SESSION_FILE = r"C:\actions-runner\tiktok_session.txt"
+
+
+def _save_session(context):
+    """投稿成功後にセッションIDをファイルに保存（次回以降の有効期限を延ばす）"""
+    try:
+        cookies = context.cookies(["https://www.tiktok.com"])
+        for c in cookies:
+            if c["name"] == "sessionid" and len(c.get("value", "")) > 10:
+                with open(SESSION_FILE, "w", encoding="ascii") as f:
+                    f.write(c["value"])
+                safe_print(f"INFO:セッションファイル更新完了", flush=True)
+                return
+    except Exception as e:
+        safe_print(f"INFO:セッション保存スキップ: {e}", flush=True)
+
+
 def run(video_path: str, caption: str):
     import urllib.request as _ureq
     cookies = get_cookies()
@@ -299,6 +316,7 @@ def run(video_path: str, caption: str):
                 # URLが変わったら成功
                 if url_now != url_before and "upload" not in url_now:
                     safe_print(f"OK:投稿完了 (URL: {url_now})", flush=True)
+                    _save_session(context)
                     return
 
                 # 「コンテンツが制限される可能性があります」警告ダイアログを閉じる
@@ -352,6 +370,7 @@ def run(video_path: str, caption: str):
 
             # タイムアウト：URLは変わらなかったが投稿された可能性あり
             safe_print(f"OK:投稿ボタンクリック完了（URL未変化）", flush=True)
+            _save_session(context)
 
     except Exception as e:
         safe_print(f"ERROR:{e}", flush=True)

@@ -10,16 +10,16 @@ Chromeが開くので TikTok にログインして、
 import os
 import subprocess
 import time
-import sqlite3
-import glob
 import sys
 
-PROFILE_DIR = r"C:\tiktok_debug_profile"
-CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+PROFILE_DIR  = r"C:\tiktok_debug_profile"
+CHROME_PATH  = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+SESSION_FILE = r"C:\actions-runner\tiktok_session.txt"
+GET_SESSION  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "get_session.py")
+PYTHON       = sys.executable
 
 
 def kill_chrome_using_profile():
-    """プロファイルを使用中のChromeを終了させる"""
     try:
         result = subprocess.run(
             ["wmic", "process", "where",
@@ -30,40 +30,11 @@ def kill_chrome_using_profile():
         for line in result.stdout.splitlines():
             line = line.strip()
             if line.isdigit():
-                subprocess.run(["taskkill", "/F", "/PID", line], timeout=5)
+                subprocess.run(["taskkill", "/F", "/PID", line], capture_output=True, timeout=5)
                 print(f"Chrome PID {line} を終了しました")
         time.sleep(1)
     except Exception:
         pass
-
-
-def get_session_id():
-    candidates = (
-        glob.glob(os.path.join(PROFILE_DIR, "**", "Network", "Cookies"), recursive=True) +
-        glob.glob(os.path.join(PROFILE_DIR, "**", "Cookies"), recursive=True)
-    )
-    for path in candidates:
-        try:
-            uri = "file:" + path.replace(os.sep, "/") + "?immutable=1"
-            conn = sqlite3.connect(uri, uri=True)
-            c = conn.cursor()
-            c.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables = [r[0] for r in c.fetchall()]
-            if not tables:
-                conn.close()
-                continue
-            table = "cookies" if "cookies" in tables else tables[0]
-            c.execute(
-                f"SELECT value FROM {table} "
-                f"WHERE host_key LIKE '%tiktok.com' AND name='sessionid'"
-            )
-            rows = c.fetchall()
-            conn.close()
-            if rows and rows[0][0]:
-                return rows[0][0]
-        except Exception:
-            continue
-    return None
 
 
 def main():
@@ -73,7 +44,6 @@ def main():
     print(f"プロファイル: {PROFILE_DIR}")
     print()
 
-    # 既存のChrome（このプロファイルを使用中）を終了
     kill_chrome_using_profile()
 
     if not os.path.exists(CHROME_PATH):
@@ -95,15 +65,25 @@ def main():
 
     # Chromeを閉じてCookiesをフラッシュ
     proc.terminate()
-    time.sleep(2)
+    time.sleep(3)
 
-    sid = get_session_id()
-    if sid:
-        print(f"\nログイン確認完了！")
-        print(f"sessionid: {sid[:16]}...")
+    # CDP経由でセッションIDを取得してファイルに保存
+    print("\nセッションIDを取得中...")
+    result = subprocess.run(
+        [PYTHON, GET_SESSION],
+        capture_output=True, text=True, timeout=60
+    )
+    sid = result.stdout.strip()
+
+    if sid and sid != "NOT_FOUND" and len(sid) > 10:
+        with open(SESSION_FILE, "w", encoding="ascii") as f:
+            f.write(sid)
+        print(f"ログイン確認完了！")
+        print(f"sessionid: {sid[:8]}...{sid[-4:]}")
+        print(f"保存先: {SESSION_FILE}")
         print("\nこれで自動投稿が動きます。次回から手動操作は不要です。")
     else:
-        print("\nsessionidが見つかりませんでした。")
+        print("\nsessionidが取得できませんでした。")
         print("TikTokにログインできているか確認して、もう一度試してください。")
         sys.exit(1)
 
