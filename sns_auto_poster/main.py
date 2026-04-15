@@ -11,15 +11,15 @@ from logger import add_post, count_posts_today, get_time_slot_stats, get_image_v
 from config import AFFILIATE_LINK
 from discord_notifier import notify_post_success, notify_post_skip, notify_quota_exceeded, notify_error
 
-MAX_POSTS_PER_DAY = 6  # 上限（実際の当日投稿数は3〜6でランダム）
+MAX_POSTS_PER_DAY = 4  # 上限（実際の当日投稿数は2〜4でランダム）
 
 
 def get_today_post_limit():
-    """当日の投稿上限を3〜6のランダムで決定（日付シードで1日固定）"""
+    """当日の投稿上限を2〜4のランダムで決定（日付シードで1日固定）"""
     jst = pytz.timezone("Asia/Tokyo")
     today_seed = int(datetime.now(jst).strftime("%Y%m%d"))
     rng = random.Random(today_seed)
-    limit = rng.randint(3, 6)
+    limit = rng.randint(2, 4)
     return limit
 MIN_DATA_POINTS = 5
 SCORE_THRESHOLD = 50   # これ未満のスコアは投稿スキップ
@@ -29,7 +29,7 @@ PENDING_POST_FILE = os.path.join(os.path.dirname(__file__), "pending_post.json")
 IMAGES_DIR = os.path.join(os.path.dirname(__file__), "generated_images")
 
 
-MIN_POST_INTERVAL_HOURS = 3  # 最低投稿間隔（時間）- スパム判定回避
+MIN_POST_INTERVAL_HOURS = 5  # 最低投稿間隔（時間）- スパム判定回避
 
 def _get_last_post_hours_ago() -> float:
     """直近の投稿から何時間経過したか返す（投稿なしの場合は999）"""
