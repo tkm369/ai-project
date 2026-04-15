@@ -101,6 +101,9 @@ def run(video_path: str, caption: str):
         "--no-restore-session-state",
         "--disable-session-crashed-bubble",
         "--hide-crash-restore-bubble",
+        "--headless=new",
+        "--disable-gpu",
+        "--no-sandbox",
         "about:blank",
     ])
     # Chromeが起動してCDPポートが開くまで待つ（最大30秒）
