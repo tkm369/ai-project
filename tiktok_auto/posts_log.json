@@ -159,5 +159,20 @@
     "likes": null,
     "comments": null,
     "last_checked": null
+  },
+  {
+    "id": "20260415_200959",
+    "posted_at": "2026-04-15T20:09:59.168038",
+    "text": "あの人の好きだったところを、次の人に求めてしまってる気がする。",
+    "text_hash": "baeedffc735fb52f80bba12321b6b828",
+    "category": "元カレ元カノ",
+    "tone": "共感型",
+    "format": "独白",
+    "posting_hour": 20,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "last_checked": null
   }
 ]
