@@ -20,6 +20,7 @@ jobs:
     steps:
       - name: Reset workspace
         run: |
+          git config --global --add safe.directory C:/actions-runner/_work/ai-project/ai-project
           git rebase --abort 2>nul
           if exist .git\rebase-merge rmdir /s /q .git\rebase-merge 2>nul
           if exist .git\rebase-apply rmdir /s /q .git\rebase-apply 2>nul
@@ -47,6 +48,7 @@ jobs:
 
       - name: Commit state
         run: |
+          git config --global --add safe.directory C:/actions-runner/_work/ai-project/ai-project
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add tiktok_auto/posts_log.json tiktok_auto/strategy.json
