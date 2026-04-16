@@ -234,5 +234,20 @@
     "likes": null,
     "comments": null,
     "last_checked": null
+  },
+  {
+    "id": "20260416_211459",
+    "posted_at": "2026-04-16T21:14:59.757219",
+    "text": "好きじゃなくなったんじゃなくて、好きなまま諦めた。",
+    "text_hash": "056d08e170bc4985c7c435de6e7715e6",
+    "category": "失恋",
+    "tone": "あるある型",
+    "format": "独白",
+    "posting_hour": 21,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "last_checked": null
   }
 ]
