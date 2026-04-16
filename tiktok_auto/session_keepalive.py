@@ -4,6 +4,7 @@ Chrome不要・Session 0で動作可能・ウィンドウ一切なし
 """
 import os
 import sys
+import subprocess
 import urllib.request
 import urllib.error
 
@@ -60,6 +61,21 @@ def check_and_keepalive() -> bool:
         return True  # ネットワークエラーはセッション切れとみなさない
 
 
+def trigger_relogin():
+    """セッション切れ検知時にユーザーセッションでauto_relogin.pyを起動する"""
+    try:
+        # Task Schedulerのタスクを起動（ユーザーセッションで実行される）
+        subprocess.run(
+            ["schtasks", "/run", "/tn", "TikTokAutoRelogin"],
+            capture_output=True, timeout=10
+        )
+        print("INFO: TikTokAutoRelogin task triggered")
+    except Exception as e:
+        print(f"WARN: relogin trigger failed: {e}")
+
+
 if __name__ == "__main__":
     ok = check_and_keepalive()
+    if not ok:
+        trigger_relogin()
     sys.exit(0 if ok else 1)
