@@ -219,5 +219,20 @@
     "likes": null,
     "comments": null,
     "last_checked": null
+  },
+  {
+    "id": "20260416_194933",
+    "posted_at": "2026-04-16T19:49:33.879316",
+    "text": "「元カレ」って言葉で片付けるには、大切な時間がたくさんあった。",
+    "text_hash": "bbc7b33a4098b86ea4be14cfd8812a25",
+    "category": "元カレ元カノ",
+    "tone": "共感型",
+    "format": "独白",
+    "posting_hour": 19,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "last_checked": null
   }
 ]
