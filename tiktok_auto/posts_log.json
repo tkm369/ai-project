@@ -309,5 +309,20 @@
     "likes": null,
     "comments": null,
     "last_checked": null
+  },
+  {
+    "id": "20260417_192754",
+    "posted_at": "2026-04-17T19:27:54.389094",
+    "text": "泣ける場所があるって、実は贅沢なことかもしれない。",
+    "text_hash": "847853ed9410914a011467b4c8b4b330",
+    "category": "寂しい夜",
+    "tone": "あるある型",
+    "format": "独白",
+    "posting_hour": 19,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "last_checked": null
   }
 ]
