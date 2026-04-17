@@ -339,5 +339,20 @@
     "likes": null,
     "comments": null,
     "last_checked": null
+  },
+  {
+    "id": "20260418_004519",
+    "posted_at": "2026-04-18T00:45:19.729184",
+    "text": "あの人の好きなものが、全部切なくなった。",
+    "text_hash": "4c6cee5900a0e19a01216dd58e6defb0",
+    "category": "失恋",
+    "tone": "共感型",
+    "format": "ストーリー",
+    "posting_hour": 0,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "last_checked": null
   }
 ]
