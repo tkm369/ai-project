@@ -100,9 +100,11 @@ def _update_log(log: list, analytics_data: list):
                 continue
         if best_idx is not None:
             item = analytics_data[best_idx]
-            entry["views"] = item.get("views", entry["views"])
-            entry["likes"] = item.get("likes", entry["likes"])
-            entry["comments"] = item.get("comments", entry["comments"])
+            entry["views"]    = item.get("views",    entry.get("views"))
+            entry["likes"]    = item.get("likes",    entry.get("likes"))
+            entry["comments"] = item.get("comments", entry.get("comments"))
+            entry["saves"]    = item.get("saves",    entry.get("saves"))
+            entry["shares"]   = item.get("shares",   entry.get("shares"))
             entry["last_checked"] = datetime.now().isoformat()
             used_items.add(best_idx)
 

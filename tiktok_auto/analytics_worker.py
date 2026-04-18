@@ -146,22 +146,37 @@ def collect():
 
         analytics = []
 
-        # --- APIレスポンスをデバッグ保存 ---
+        # --- APIレスポンスをデバッグ保存（item_listの最初のitem構造を保存） ---
         try:
-            debug_path = r"C:\actions-runner\debug_api_responses.json"
-            with open(debug_path, "w", encoding="utf-8") as dbf:
-                # 各レスポンスの構造（先頭2件のみ、サイズ制限）
-                debug_data = []
-                for r in api_responses[:5]:
-                    d = r["data"]
-                    debug_data.append({
-                        "url": r["url"],
-                        "top_keys": list(d.keys()) if isinstance(d, dict) else type(d).__name__,
-                        "data_keys": list(d.get("data", {}).keys()) if isinstance(d.get("data"), dict) else None,
-                        "raw_preview": json.dumps(d, ensure_ascii=False)[:500],
-                    })
-                json.dump(debug_data, dbf, ensure_ascii=False, indent=2)
-            safe_print(f"INFO:APIデバッグ保存: {debug_path}", flush=True)
+            item_saved = False
+            for r in api_responses:
+                if "item_list" not in r["url"]:
+                    continue
+                d = r["data"]
+                # あらゆるネストを試みてitemsを見つける
+                def find_items(obj, depth=0):
+                    if depth > 3 or not isinstance(obj, dict):
+                        return []
+                    for k, v in obj.items():
+                        if isinstance(v, list) and v and isinstance(v[0], dict):
+                            if any(x in v[0] for x in ["create_time","createTime","aweme_id","id","video_id"]):
+                                return v
+                    for k, v in obj.items():
+                        if isinstance(v, dict):
+                            result = find_items(v, depth+1)
+                            if result:
+                                return result
+                    return []
+                items_found = find_items(d)
+                if items_found:
+                    sample = items_found[0]
+                    with open(r"C:\actions-runner\debug_item.json", "w", encoding="utf-8") as f:
+                        json.dump(sample, f, ensure_ascii=False, indent=2)
+                    safe_print(f"INFO:サンプルitem保存: {list(sample.keys())[:15]}", flush=True)
+                    item_saved = True
+                    break
+            if not item_saved:
+                safe_print("WARN:サンプルitem取得失敗", flush=True)
         except Exception as de:
             safe_print(f"WARN:デバッグ保存失敗: {de}", flush=True)
 
@@ -219,28 +234,45 @@ def collect():
                         except (ValueError, TypeError):
                             return None
 
-                    views = _to_int(
-                        stats.get("play_count") or stats.get("playCount") or
-                        stats.get("view_count") or stats.get("viewCount") or
-                        stats.get("video_view_count") or
-                        item.get("play_count") or item.get("playCount")
-                    )
-                    likes = _to_int(
-                        stats.get("digg_count") or stats.get("diggCount") or
-                        stats.get("like_count") or stats.get("likeCount") or
-                        item.get("digg_count") or item.get("diggCount")
-                    )
-                    comments = _to_int(
-                        stats.get("comment_count") or stats.get("commentCount") or
-                        item.get("comment_count") or item.get("commentCount")
-                    )
+                    def _get(*keys):
+                        """item または stats から最初に見つかった値を返す"""
+                        for k in keys:
+                            v = item.get(k)
+                            if v is None:
+                                v = stats.get(k)
+                            if v is not None:
+                                return v
+                        return None
+
+                    views = _to_int(_get(
+                        "play_count", "playCount", "view_count", "viewCount",
+                        "video_view_count",
+                    ))
+                    likes = _to_int(_get(
+                        "like_count", "likeCount",
+                        "digg_count", "diggCount",
+                        "heart_count", "heartCount",
+                    ))
+                    comments = _to_int(_get(
+                        "comment_count", "commentCount",
+                    ))
+                    saves = _to_int(_get(
+                        "favorite_count", "favoriteCount",
+                        "collect_count", "collectCount",
+                        "save_count", "saveCount",
+                    ))
+                    shares = _to_int(_get(
+                        "share_count", "shareCount",
+                    ))
 
                     if views is not None or likes is not None:
                         analytics.append({
                             "created_at": created_at,
-                            "views": views,
-                            "likes": likes,
+                            "views":    views,
+                            "likes":    likes,
                             "comments": comments,
+                            "saves":    saves,
+                            "shares":   shares,
                         })
                 except Exception:
                     continue

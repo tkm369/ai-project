@@ -61,8 +61,12 @@ def compute_stats(posts: list) -> dict:
         return {}
 
     def metric(p):
-        """いいね優先、なければ再生数を使う"""
-        return p.get("likes") if p.get("likes") is not None else p.get("views", 0)
+        """いいね優先、なければ保存数、なければ再生数を使う"""
+        if p.get("likes") is not None:
+            return p["likes"]
+        if p.get("saves") is not None:
+            return p["saves"]
+        return p.get("views", 0)
 
     def avg_by(key, choices):
         result = {}
