@@ -428,5 +428,25 @@
     "last_checked": "2026-04-18T11:00:51.775189",
     "saves": 0,
     "shares": 0
+  },
+  {
+    "id": "20260418_155335",
+    "posted_at": "2026-04-18T15:53:35.012339",
+    "content_type": "card",
+    "text": "寂しいって言えたら、もう少し楽になれる気がする。",
+    "text_hash": "53d7462c7431692c1d78342197949bf5",
+    "category": "寂しい夜",
+    "tone": "共感型",
+    "format": "ストーリー",
+    "card_style": "xdark",
+    "posting_hour": 15,
+    "text_length": 24,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "saves": null,
+    "shares": null,
+    "last_checked": null
   }
 ]
