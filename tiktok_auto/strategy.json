@@ -1,20 +1,55 @@
 {
   "version": 1,
-  "updated_at": "",
+  "updated_at": "2026-04-18 10:50",
   "categories": {
-    "片思い":     {"weight": 1.0, "avg_likes": null, "post_count": 0},
-    "失恋":       {"weight": 1.0, "avg_likes": null, "post_count": 0},
-    "復縁":       {"weight": 1.0, "avg_likes": null, "post_count": 0},
-    "恋愛あるある": {"weight": 1.0, "avg_likes": null, "post_count": 0},
-    "元カレ元カノ": {"weight": 1.0, "avg_likes": null, "post_count": 0},
-    "好きな人":   {"weight": 1.0, "avg_likes": null, "post_count": 0},
-    "寂しい夜":   {"weight": 1.0, "avg_likes": null, "post_count": 0},
-    "恋愛名言":   {"weight": 1.0, "avg_likes": null, "post_count": 0}
+    "片思い": {
+      "weight": 1.84,
+      "avg_likes": 358.3,
+      "post_count": 3
+    },
+    "失恋": {
+      "weight": 1.64,
+      "avg_likes": 273.2,
+      "post_count": 4
+    },
+    "復縁": {
+      "weight": 2.0,
+      "avg_likes": 427.0,
+      "post_count": 1
+    },
+    "恋愛あるある": {
+      "weight": 1.9,
+      "avg_likes": 383.5,
+      "post_count": 2
+    },
+    "元カレ元カノ": {
+      "weight": 1.61,
+      "avg_likes": 261.0,
+      "post_count": 4
+    },
+    "好きな人": {
+      "weight": 1.82,
+      "avg_likes": 350.0,
+      "post_count": 1
+    },
+    "寂しい夜": {
+      "weight": 1.84,
+      "avg_likes": 358.0,
+      "post_count": 3
+    },
+    "恋愛名言": {
+      "weight": 1.93,
+      "avg_likes": 398.7,
+      "post_count": 3
+    }
   },
-  "insights": "データ蓄積中",
+  "insights": "views計測中（22件）。復縁が最高avg 427views",
   "generation_params": {
     "tone": "共感型",
     "format": "独白",
-    "length_range": [50, 80]
+    "length_range": [
+      50,
+      80
+    ]
   }
 }
