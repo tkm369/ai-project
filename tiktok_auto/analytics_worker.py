@@ -200,25 +200,37 @@ def collect():
                         item.get("publishTime")
                     )
                     if created:
-                        if isinstance(created, (int, float)):
-                            created_at = datetime.fromtimestamp(int(created)).isoformat()
+                        created_str = str(created).strip()
+                        # Unixタイムスタンプ（整数または文字列）をISO datetimeに変換
+                        if isinstance(created, (int, float)) or (
+                            created_str.isdigit() and len(created_str) >= 9
+                        ):
+                            created_at = datetime.fromtimestamp(int(created_str)).isoformat()
                         else:
-                            created_at = str(created)
+                            created_at = created_str
                     else:
                         continue
 
-                    views = (
+                    def _to_int(v):
+                        if v is None:
+                            return None
+                        try:
+                            return int(str(v).replace(',', ''))
+                        except (ValueError, TypeError):
+                            return None
+
+                    views = _to_int(
                         stats.get("play_count") or stats.get("playCount") or
                         stats.get("view_count") or stats.get("viewCount") or
                         stats.get("video_view_count") or
                         item.get("play_count") or item.get("playCount")
                     )
-                    likes = (
+                    likes = _to_int(
                         stats.get("digg_count") or stats.get("diggCount") or
                         stats.get("like_count") or stats.get("likeCount") or
                         item.get("digg_count") or item.get("diggCount")
                     )
-                    comments = (
+                    comments = _to_int(
                         stats.get("comment_count") or stats.get("commentCount") or
                         item.get("comment_count") or item.get("commentCount")
                     )
