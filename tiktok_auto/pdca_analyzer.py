@@ -53,16 +53,21 @@ def save_strategy(s: dict):
 # ------------------------------------------------------------------ #
 
 def compute_stats(posts: list) -> dict:
-    """カテゴリ・トーン・フォーマット別の平均いいね数を計算"""
-    # メトリクスがある投稿のみ対象
-    measured = [p for p in posts if p.get("likes") is not None]
+    """カテゴリ・トーン・フォーマット別の平均再生数/いいね数を計算
+    likes が取れない場合は views を代替指標として使用"""
+    # viewsかlikesがある投稿を対象（views優先）
+    measured = [p for p in posts if p.get("views") is not None or p.get("likes") is not None]
     if not measured:
         return {}
+
+    def metric(p):
+        """いいね優先、なければ再生数を使う"""
+        return p.get("likes") if p.get("likes") is not None else p.get("views", 0)
 
     def avg_by(key, choices):
         result = {}
         for val in choices:
-            group = [p["likes"] for p in measured if p.get(key) == val]
+            group = [metric(p) for p in measured if p.get(key) == val]
             if group:
                 result[val] = round(sum(group) / len(group), 1)
         return result
@@ -73,7 +78,7 @@ def compute_stats(posts: list) -> dict:
         "by_tone":     avg_by("tone", TONES),
         "by_format":   avg_by("format", FORMATS),
         "by_hour": {
-            h: round(sum(p["likes"] for p in measured if p.get("posting_hour") == h)
+            h: round(sum(metric(p) for p in measured if p.get("posting_hour") == h)
                      / len([p for p in measured if p.get("posting_hour") == h]), 1)
             for h in range(24)
             if any(p.get("posting_hour") == h for p in measured)
@@ -98,6 +103,7 @@ def compute_stats(posts: list) -> dict:
 # ------------------------------------------------------------------ #
 
 def _call_gemini(prompt: str) -> str:
+    import time
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY未設定")
     body = json.dumps({
@@ -108,15 +114,23 @@ def _call_gemini(prompt: str) -> str:
             "responseMimeType": "application/json",
         },
     }).encode("utf-8")
-    req = urllib.request.Request(
-        f"{GEMINI_URL}?key={GEMINI_API_KEY}",
-        data=body,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=30) as r:
-        resp = json.loads(r.read())
-    return resp["candidates"][0]["content"]["parts"][0]["text"].strip()
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(
+                f"{GEMINI_URL}?key={GEMINI_API_KEY}",
+                data=body,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=30) as r:
+                resp = json.loads(r.read())
+            return resp["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except Exception as e:
+            if "429" in str(e) and attempt < 2:
+                print(f"Gemini rate limit, 65秒待機... (attempt {attempt+1}/3)")
+                time.sleep(65)
+            else:
+                raise
 
 
 def analyze_with_gemini(stats: dict, current_strategy: dict) -> dict:
