@@ -51,9 +51,17 @@ def collect_analytics():
         env={**os.environ}
     )
 
+    # worker出力をそのままログに流す（デバッグ用）
+    for line in result.stdout.splitlines():
+        if not line.startswith("ANALYTICS:"):
+            logger.info(f"[worker] {line}")
+    if result.stderr:
+        for line in result.stderr.splitlines()[:20]:
+            logger.warning(f"[worker stderr] {line}")
+
     if result.returncode != 0:
-        logger.error(f"analytics_worker失敗: {result.stderr[:200]}")
-        return
+        logger.error(f"analytics_worker失敗 (rc={result.returncode})")
+        # returncode!=0でもANALYTICSが出力されている場合は続行
 
     # workerの出力からJSONを取得
     for line in result.stdout.splitlines():

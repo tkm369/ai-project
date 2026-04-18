@@ -130,6 +130,13 @@ def collect():
         safe_print(f"INFO:タイトル: {title}", flush=True)
         safe_print(f"INFO:URL: {url}", flush=True)
 
+        # デバッグ用スクリーンショット保存
+        try:
+            page.screenshot(path=r"C:\actions-runner\debug_analytics.png", full_page=False)
+            safe_print("INFO:スクリーンショット保存: C:\\actions-runner\\debug_analytics.png", flush=True)
+        except Exception as se:
+            safe_print(f"WARN:スクリーンショット失敗: {se}", flush=True)
+
         # セッション切れ検知
         if "login" in url.lower() or "passport" in url.lower():
             safe_print("ERROR:セッション切れ - ログインページにリダイレクト", flush=True)
