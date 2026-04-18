@@ -369,5 +369,20 @@
     "likes": null,
     "comments": null,
     "last_checked": null
+  },
+  {
+    "id": "20260418_100508",
+    "posted_at": "2026-04-18T10:05:08.479055",
+    "text": "新しい恋人ができたと聞いて、おめでとうと思えた日、少し成長した気がした。",
+    "text_hash": "29b3f318e3b7286383899303e159a799",
+    "category": "元カレ元カノ",
+    "tone": "共感型",
+    "format": "独白",
+    "posting_hour": 10,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "last_checked": null
   }
 ]
