@@ -193,13 +193,38 @@ def run():
     print(f"計測済み投稿: {stats['total_measured']}件")
     print(f"カテゴリ別平均いいね: {stats.get('by_category', {})}")
 
-    # Geminiで分析
+    # カテゴリ統計を先に更新（Gemini失敗でも反映させる）
+    by_cat = stats.get("by_category", {})
+    for cat in CATEGORIES:
+        if cat in strategy.get("categories", {}):
+            if cat in by_cat:
+                strategy["categories"][cat]["avg_likes"] = by_cat[cat]
+            cnt = sum(1 for p in posts
+                      if p.get("category") == cat and
+                      (p.get("views") is not None or p.get("likes") is not None))
+            strategy["categories"][cat]["post_count"] = cnt
+
+    # Geminiで分析（失敗時はルールベースフォールバック）
     print("Gemini分析中...")
+    result = None
     try:
         result = analyze_with_gemini(stats, strategy)
     except Exception as e:
-        print(f"Gemini分析エラー: {e}")
-        return
+        print(f"Gemini分析エラー（フォールバック使用）: {e}")
+
+    if result is None:
+        # ルールベース: 平均スコアが高いカテゴリのweightを上げる
+        if by_cat:
+            max_score = max(by_cat.values()) or 1
+            new_weights = {cat: round(1.0 + (by_cat.get(cat, max_score/2) / max_score), 2)
+                           for cat in CATEGORIES}
+            top_cat = max(by_cat, key=by_cat.get)
+            result = {
+                "insights": f"views計測中（{stats['total_measured']}件）。{top_cat}が最高avg {by_cat[top_cat]:.0f}views",
+                "category_weights": new_weights,
+                "generation_params": strategy.get("generation_params", {}),
+            }
+            print(f"フォールバック結果: {top_cat}が最高（{by_cat[top_cat]:.0f} avg views）")
 
     # strategy.jsonを更新
     strategy["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -210,14 +235,6 @@ def run():
     for cat in CATEGORIES:
         if cat in new_weights and cat in strategy.get("categories", {}):
             strategy["categories"][cat]["weight"] = float(new_weights[cat])
-
-    # カテゴリ統計も更新
-    by_cat = stats.get("by_category", {})
-    for cat in CATEGORIES:
-        if cat in by_cat and cat in strategy.get("categories", {}):
-            strategy["categories"][cat]["avg_likes"] = by_cat[cat]
-            cnt = sum(1 for p in posts if p.get("category") == cat and p.get("likes") is not None)
-            strategy["categories"][cat]["post_count"] = cnt
 
     # 生成パラメータを更新
     new_params = result.get("generation_params", {})
