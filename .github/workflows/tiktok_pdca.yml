@@ -8,7 +8,7 @@ on:
 jobs:
   pdca:
     runs-on: self-hosted
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: write
 
@@ -44,7 +44,7 @@ jobs:
           C:\qwen3tts-jp\Qwen3-TTS-JP\.venv\Scripts\python.exe analytics_collector.py
         shell: cmd
 
-      - name: Analyze and update strategy
+      - name: Analyze and update strategy (category weights)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
@@ -52,12 +52,20 @@ jobs:
           C:\qwen3tts-jp\Qwen3-TTS-JP\.venv\Scripts\python.exe pdca_analyzer.py
         shell: cmd
 
+      - name: Optimize config (hashtags / duration / style)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          cd tiktok_auto
+          C:\qwen3tts-jp\Qwen3-TTS-JP\.venv\Scripts\python.exe strategy_optimizer.py
+        shell: cmd
+
       - name: Commit PDCA results
         run: |
           git config --global --add safe.directory C:/actions-runner/_work/ai-project/ai-project
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add tiktok_auto/posts_log.json tiktok_auto/strategy.json
+          git add tiktok_auto/posts_log.json tiktok_auto/strategy.json tiktok_auto/config.py tiktok_auto/pdca_report.json 2>nul
           git diff --staged --quiet || git commit -m "chore: PDCA更新 [skip ci]"
           git fetch origin
           if exist .git\rebase-merge rmdir /s /q .git\rebase-merge 2>nul
