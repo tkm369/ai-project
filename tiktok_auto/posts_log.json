@@ -568,5 +568,25 @@
     "saves": null,
     "shares": null,
     "last_checked": null
+  },
+  {
+    "id": "20260419_201456",
+    "posted_at": "2026-04-19T20:14:56.785413",
+    "content_type": "card",
+    "text": "好きだったのに、終わった。それだけのことが、こんなに重い。",
+    "text_hash": "ac1a1f28682d8d01085060309711875f",
+    "category": "失恋",
+    "tone": "共感型",
+    "format": "独白",
+    "card_style": "xdark",
+    "posting_hour": 20,
+    "text_length": 29,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "saves": null,
+    "shares": null,
+    "last_checked": null
   }
 ]
