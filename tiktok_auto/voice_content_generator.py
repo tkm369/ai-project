@@ -68,30 +68,8 @@ VOICE_HASHTAGS = {
 
 
 def _call_gemini(prompt: str) -> str:
-    import time
-    if not GEMINI_API_KEY:
-        raise RuntimeError("GEMINI_API_KEY未設定")
-    body = json.dumps({
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"maxOutputTokens": 1500, "temperature": 0.85},
-    }).encode("utf-8")
-    for attempt in range(3):
-        try:
-            req = urllib.request.Request(
-                f"{GEMINI_URL}?key={GEMINI_API_KEY}",
-                data=body,
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=30) as res:
-                data = json.loads(res.read())
-                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-        except Exception as e:
-            if "429" in str(e) and attempt < 2:
-                logger.info(f"Gemini rate limit, 65秒待機 (attempt {attempt+1}/3)")
-                import time as _t; _t.sleep(65)
-            else:
-                raise
+    from gemini_client import call_gemini
+    return call_gemini(prompt, max_tokens=1500, temperature=0.85)
 
 
 def _build_prompt(fmt: str, title: str, style_hint: str = "") -> str:

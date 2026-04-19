@@ -156,34 +156,8 @@ def compute_stats(posts: list) -> dict:
 # ------------------------------------------------------------------ #
 
 def _call_gemini(prompt: str) -> str:
-    import time
-    if not GEMINI_API_KEY:
-        raise RuntimeError("GEMINI_API_KEY未設定")
-    body = json.dumps({
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.3,
-            "maxOutputTokens": 1024,
-            "responseMimeType": "application/json",
-        },
-    }).encode("utf-8")
-    for attempt in range(3):
-        try:
-            req = urllib.request.Request(
-                f"{GEMINI_URL}?key={GEMINI_API_KEY}",
-                data=body,
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=30) as r:
-                resp = json.loads(r.read())
-            return resp["candidates"][0]["content"]["parts"][0]["text"].strip()
-        except Exception as e:
-            if "429" in str(e) and attempt < 2:
-                print(f"Gemini rate limit, 65秒待機... (attempt {attempt+1}/3)")
-                time.sleep(65)
-            else:
-                raise
+    from gemini_client import call_gemini
+    return call_gemini(prompt, max_tokens=1024, temperature=0.3, response_json=True)
 
 
 def analyze_with_gemini(stats: dict, current_strategy: dict) -> dict:

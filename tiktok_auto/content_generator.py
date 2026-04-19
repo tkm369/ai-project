@@ -219,33 +219,8 @@ def pick_category(strategy: dict) -> str:
 # ------------------------------------------------------------------ #
 
 def _call_gemini(prompt: str) -> str:
-    import time as _time
-    if not GEMINI_API_KEY:
-        raise RuntimeError("GEMINI_API_KEY未設定")
-    body = json.dumps({
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.92, "maxOutputTokens": 300},
-    }).encode("utf-8")
-    # レートリミット対策: 最大3回、指数バックオフ
-    for attempt in range(3):
-        try:
-            req = urllib.request.Request(
-                f"{GEMINI_URL}?key={GEMINI_API_KEY}",
-                data=body,
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=30) as r:
-                resp = json.loads(r.read())
-            return resp["candidates"][0]["content"]["parts"][0]["text"].strip()
-        except urllib.error.HTTPError as e:
-            if e.code == 429 and attempt < 2:
-                wait = 30 * (attempt + 1)  # 30秒, 60秒
-                print(f"Gemini rate limit, {wait}秒待機...", flush=True)
-                _time.sleep(wait)
-            else:
-                raise
-    raise RuntimeError("Gemini API 3回リトライ失敗")
+    from gemini_client import call_gemini
+    return call_gemini(prompt, max_tokens=300, temperature=0.92)
 
 
 # ------------------------------------------------------------------ #

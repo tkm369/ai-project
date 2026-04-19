@@ -22,30 +22,15 @@ MIN_POSTS = 5  # 最低この件数のデータがないと分析しない
 
 
 def _gemini(prompt: str) -> str:
-    import time
-    if not GEMINI_API_KEY:
+    try:
+        from gemini_client import call_gemini, GeminiUnavailable, GeminiQuotaExhausted
+        return call_gemini(prompt, max_tokens=1500, temperature=0.3)
+    except (GeminiUnavailable, GeminiQuotaExhausted) as e:
+        logger.warning(f"Gemini スキップ: {e}")
         return ""
-    body = json.dumps({
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"maxOutputTokens": 1500, "temperature": 0.3}
-    }).encode("utf-8")
-    for attempt in range(3):
-        try:
-            req = urllib.request.Request(
-                f"{GEMINI_URL}?key={GEMINI_API_KEY}",
-                data=body, headers={"Content-Type": "application/json"}, method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=30) as res:
-                data = json.loads(res.read())
-                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-        except Exception as e:
-            if "429" in str(e) and attempt < 2:
-                logger.info(f"Gemini rate limit, 65秒待機... (attempt {attempt+1}/3)")
-                time.sleep(65)
-            else:
-                logger.error(f"Gemini失敗: {e}")
-                return ""
-    return ""
+    except Exception as e:
+        logger.error(f"Gemini失敗: {e}")
+        return ""
 
 
 def _avg(lst):
