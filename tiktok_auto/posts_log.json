@@ -628,5 +628,25 @@
     "saves": 0,
     "shares": 0,
     "last_checked": "2026-04-20T02:56:45.488897"
+  },
+  {
+    "id": "20260420_090015",
+    "posted_at": "2026-04-20T09:00:15.237632",
+    "content_type": "card",
+    "text": "あの人が笑うと、無意識に自分も笑ってる。気づいたとき恥ずかしかった。",
+    "text_hash": "94032b6a235321a0331c115c53ce754a",
+    "category": "片思い",
+    "tone": "共感型",
+    "format": "ストーリー",
+    "card_style": "xdark",
+    "posting_hour": 9,
+    "text_length": 34,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "saves": null,
+    "shares": null,
+    "last_checked": null
   }
 ]
