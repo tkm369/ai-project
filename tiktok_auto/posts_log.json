@@ -728,5 +728,25 @@
     "saves": 0,
     "shares": 0,
     "last_checked": "2026-04-21T07:33:16.365138"
+  },
+  {
+    "id": "20260421_090908",
+    "posted_at": "2026-04-21T09:09:08.374549",
+    "content_type": "card",
+    "text": "幸せそうな投稿を見て、素直に祝えない自分がいた。",
+    "text_hash": "9be667e5d16e34b13a67ae09f6e60b15",
+    "category": "元カレ元カノ",
+    "tone": "共感型",
+    "format": "独白",
+    "card_style": "xdark",
+    "posting_hour": 9,
+    "text_length": 24,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "saves": null,
+    "shares": null,
+    "last_checked": null
   }
 ]
