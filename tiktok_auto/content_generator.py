@@ -28,7 +28,7 @@ CATEGORIES = [
 ]
 
 TONES   = ["共感型", "励まし型", "あるある型"]
-FORMATS = ["独白", "問いかけ", "ストーリー"]
+FORMATS = ["独白", "問いかけ", "ストーリー", "list"]
 
 # Geminiが使えない時のフォールバックコンテンツ（カテゴリ別・各15件以上）
 _FALLBACK = {
@@ -171,6 +171,21 @@ _FALLBACK = {
 }
 
 
+# list フォーマット用フォールバック（5行構成: タイトル + ①②③ + CTA）
+_LIST_FALLBACK = [
+    "失恋した直後にやること3つ\n① まず1週間はLINEを消さない\n② 泣く時間を夜だけに決める\n③ 自分の変化を一言だけ書き留める\n保存して読み返してね",
+    "片思いをこじらせやすい人の特徴3つ\n① 相手の言葉を深読みしすぎる\n② 返信時間を何度も確認する\n③ 「どうせ無理」が口癖になってる\n保存して読み返してね",
+    "好きな人に気づいてもらえるサイン3つ\n① 名前を呼ぶ回数が増える\n② 目が合うと視線を外してしまう\n③ 相手の好きなものを覚えている\n保存して読み返してね",
+    "寂しい夜に試してほしいこと3つ\n① 過去の自分へ手紙を書く\n② 好きな音楽を大音量で聴く\n③ 明日の「楽しみ」を1つだけ決める\n保存して読み返してね",
+    "元カノ・元カレを引きずる人の共通点3つ\n① 別れた理由を美化してしまう\n② 相手のSNSをまだ見ている\n③ 次の恋より「あの頃」を比べてしまう\n保存して読み返してね",
+    "恋愛で傷つきにくくなるコツ3つ\n① 期待値を少しだけ下げてみる\n② 自分の好きなことを優先する日を作る\n③ 「合わない人もいる」と早めに認める\n保存して読み返してね",
+    "好きな人への気持ちに気づく瞬間3つ\n① その人の声だけ聞き取れてしまう\n② 名前を見るだけで心臓が動く\n③ 無意識に表情を追っている\n保存して読み返してね",
+    "失恋後に自分を取り戻すステップ3つ\n① 泣くことを我慢しない\n② 一人の時間を怖がらない\n③ 小さな「できた」を積み重ねる\n保存して読み返してね",
+    "恋愛名言から学ぶ大切なこと3つ\n① 愛するより愛されることを選ばない\n② 別れは終わりでなく変化のはじまり\n③ 自分を大切にできる人が愛せる\n保存して読み返してね",
+    "片思いが長続きしやすい状況3つ\n① 毎日同じ場所で会える環境にある\n② 相手からも優しくされている\n③ 「まだ脈があるかも」と思い続けている\n保存して読み返してね",
+]
+
+
 # ------------------------------------------------------------------ #
 #  strategy.json の読み書き
 # ------------------------------------------------------------------ #
@@ -251,6 +266,54 @@ def _fallback_content(category: str, tone: str, fmt: str, posted_hashes: set = N
     return {"text": text, "category": category, "tone": tone, "format": fmt}
 
 
+def _generate_list_content(category: str, posted_hashes: set = None) -> dict:
+    """保存誘導リスト形式（5行: タイトル + ①②③ + CTA）"""
+    import hashlib
+    prompt = f"""あなたはTikTokで恋愛コンテンツを発信するクリエイターです。
+以下の条件でリスト形式のテキストを1つ書いてください。
+
+【カテゴリ】{category}
+【フォーマット】全5行のリスト形式
+  1行目: タイトル（〜な人へ / 〜すること3つ / 〜な瞬間3つ など、20文字以内）
+  2〜4行目: ①②③の各項目（各25文字以内、①②③の番号付きで書く）
+  5行目: 必ず「保存して読み返してね」（固定）
+
+必須条件：
+- 絵文字・ハッシュタグを一切使わない
+- 10代後半〜30代女性が深夜に見て「わかる」と思える内容
+- 業者・占い・勧誘の要素は絶対に含めない
+- 5行ちょうどで出力すること（前置きや説明は不要）
+
+テキストだけ出力（前置き・かぎかっこ不要）："""
+    try:
+        text = _call_gemini(prompt)
+        text = re.sub(r"[#＃]\S+", "", text)
+        text = re.sub(
+            r"[\U0001F300-\U0001F64F\U0001F680-\U0001FAFF\u2600-\u27BF]",
+            "", text
+        )
+        text = text.strip()
+        # 5行になっていない場合はフォールバック
+        if len(text.split("\n")) < 4:
+            raise ValueError("list format incomplete")
+    except Exception as e:
+        import hashlib as _h
+        pool = _LIST_FALLBACK[:]
+        if posted_hashes:
+            unused = [t for t in pool if _h.md5(t.strip().encode()).hexdigest() not in posted_hashes]
+            if unused:
+                pool = unused
+        text = random.choice(pool)
+
+    return {
+        "text": text,
+        "category": category,
+        "tone": "励まし型",
+        "format": "list",
+        "card_style": "list_card",
+    }
+
+
 def generate_content(strategy: dict = None, posted_hashes: set = None) -> dict:
     """
     戦略に基づいてTikTok用コンテンツを生成する。
@@ -278,6 +341,10 @@ def generate_content(strategy: dict = None, posted_hashes: set = None) -> dict:
     else:
         tone = params.get("tone", random.choice(TONES))
         fmt  = params.get("format", random.choice(FORMATS))
+
+    # list フォーマットは専用関数で処理
+    if fmt == "list":
+        return _generate_list_content(category, posted_hashes)
 
     insight_line = ""
     if insights and insights not in ("データ蓄積中", ""):

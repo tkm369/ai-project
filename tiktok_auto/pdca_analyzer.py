@@ -25,8 +25,8 @@ CATEGORIES    = [
     "元カレ元カノ", "好きな人", "寂しい夜", "恋愛名言",
 ]
 TONES         = ["共感型", "励まし型", "あるある型"]
-FORMATS       = ["独白", "問いかけ", "ストーリー", "qa", "dialogue"]
-CARD_STYLES   = ["xdark", "gradient", "poem", "light", "line_chat", "notebook"]
+FORMATS       = ["独白", "問いかけ", "ストーリー", "qa", "dialogue", "list"]
+CARD_STYLES   = ["xdark", "gradient", "poem", "light", "line_chat", "notebook", "list_card"]
 VOICE_FORMATS = ["fortune", "psychology", "advice"]   # 音声投稿フォーマット
 
 

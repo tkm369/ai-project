@@ -57,14 +57,16 @@
     "poem": 1.0,
     "light": 1.0,
     "line_chat": 1.0,
-    "notebook": 1.0
+    "notebook": 1.0,
+    "list_card": 1.0
   },
   "format_weights": {
     "独白": 1.96,
     "問いかけ": 1.53,
     "ストーリー": 2.0,
     "qa": 1.0,
-    "dialogue": 1.0
+    "dialogue": 1.0,
+    "list": 1.5
   },
   "voice_format_weights": {
     "fortune": 1.0,
@@ -129,6 +131,10 @@
     "notebook": {
       "alpha": 1.0,
       "beta": 1.0
+    },
+    "list_card": {
+      "alpha": 1.0,
+      "beta": 1.0
     }
   },
   "ts_format": {
@@ -149,6 +155,10 @@
       "beta": 1.0
     },
     "dialogue": {
+      "alpha": 1.0,
+      "beta": 1.0
+    },
+    "list": {
       "alpha": 1.0,
       "beta": 1.0
     }

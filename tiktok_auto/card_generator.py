@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 CARD_WIDTH  = 900
-CARD_STYLES = ["xdark", "gradient", "poem", "light", "line_chat", "notebook"]
+CARD_STYLES = ["xdark", "gradient", "poem", "light", "line_chat", "notebook", "list_card"]
 # voice_title は音声投稿専用（PDCA のカードスタイル選択対象外）
 VOICE_TITLE_STYLE = "voice_title"
 
@@ -258,7 +258,93 @@ def _notebook(text: str, path: str) -> str:
 
 
 # ─────────────────────────────────────────
-# Style 7: voice_title  (音声投稿用タイトルカード)
+# Style 7: list_card  (保存誘導リスト形式)
+# ─────────────────────────────────────────
+def _list_card(text: str, path: str) -> str:
+    """リスト形式カード: タイトル(amber) + ①②③(blue+white) + CTA(muted blue)"""
+    PAD_X, PAD_TOP, PAD_BOT = 52, 44, 40
+    FS_T, FS_I, FS_C = 37, 32, 25
+    BG       = (13, 17, 30)
+    TITLE_COL= (255, 190, 100)   # amber
+    NUM_COL  = (120, 160, 255)   # blue numbers
+    ITEM_COL = (222, 228, 248)   # near-white items
+    CTA_COL  = (95, 125, 170)    # muted blue CTA
+    ACC_COL  = (60, 90, 200)     # accent bar
+
+    font_t = _get_font(FS_T)
+    font_i = _get_font(FS_I)
+    font_c = _get_font(FS_C)
+
+    d0 = ImageDraw.Draw(Image.new("RGB", (CARD_WIDTH, 100)))
+
+    # テキストをパース
+    raw_lines = [l for l in text.split("\n") if l.strip()]
+    title_line = raw_lines[0] if raw_lines else ""
+    cta_line   = raw_lines[-1] if len(raw_lines) > 1 else "保存して読み返してね"
+    item_lines = raw_lines[1:-1] if len(raw_lines) > 2 else raw_lines[1:]
+
+    # 高さ計算
+    lh_t = _lh(d0, font_t, 1.5)
+    lh_i = _lh(d0, font_i, 1.7)
+    lh_c = _lh(d0, font_c, 1.4)
+
+    sep_gap = 16
+    total_items_h = lh_i * len(item_lines)
+    h = PAD_TOP + lh_t + sep_gap + 4 + sep_gap + total_items_h + sep_gap + lh_c + PAD_BOT
+
+    img = Image.new("RGB", (CARD_WIDTH, h), BG)
+    draw = ImageDraw.Draw(img)
+
+    # 上下アクセントバー
+    draw.rectangle([0, 0, CARD_WIDTH, 4], fill=ACC_COL)
+    draw.rectangle([0, h - 4, CARD_WIDTH, h], fill=ACC_COL)
+
+    # タイトル
+    y = PAD_TOP
+    title_wrapped = _wrap(title_line, font_t, CARD_WIDTH - PAD_X * 2, draw)
+    for tl in title_wrapped:
+        draw.text((PAD_X, y), tl, font=font_t, fill=TITLE_COL)
+        y += lh_t
+
+    # セパレータ
+    y += sep_gap
+    draw.line([(PAD_X, y), (CARD_WIDTH - PAD_X, y)], fill=(40, 55, 90), width=1)
+    y += 4 + sep_gap
+
+    # ①②③ アイテム
+    for item in item_lines:
+        # 番号部分（①②③）と残りを分ける
+        num_char = ""
+        rest = item
+        if item and item[0] in "①②③④⑤⑥⑦⑧⑨":
+            num_char = item[0]
+            rest = item[1:].lstrip()
+
+        if num_char:
+            nw = draw.textbbox((0, 0), num_char, font=font_i)[2]
+            draw.text((PAD_X, y), num_char, font=font_i, fill=NUM_COL)
+            # 残りテキストを折り返し
+            item_wrapped = _wrap(rest, font_i, CARD_WIDTH - PAD_X * 2 - nw - 8, draw)
+            ix = PAD_X + nw + 8
+        else:
+            item_wrapped = _wrap(rest, font_i, CARD_WIDTH - PAD_X * 2, draw)
+            ix = PAD_X
+
+        for il in item_wrapped:
+            draw.text((ix, y), il, font=font_i, fill=ITEM_COL)
+            y += lh_i
+
+    # CTA
+    y += sep_gap
+    cta_w = draw.textbbox((0, 0), cta_line, font=font_c)[2]
+    draw.text(((CARD_WIDTH - cta_w) // 2, y), cta_line, font=font_c, fill=CTA_COL)
+
+    _mask(img, 24).save(path, "PNG")
+    return path
+
+
+# ─────────────────────────────────────────
+# Style 8: voice_title  (音声投稿用タイトルカード)
 # ─────────────────────────────────────────
 def _voice_title(text: str, path: str) -> str:
     """音声動画専用タイトルカード（エレガントな深色グラデ・大文字中央寄せ）"""
@@ -323,6 +409,7 @@ _DISPATCH = {
     "light":       _light,
     "line_chat":   _line_chat,
     "notebook":    _notebook,
+    "list_card":   _list_card,
     "voice_title": _voice_title,
 }
 
