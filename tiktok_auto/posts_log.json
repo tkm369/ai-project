@@ -908,5 +908,25 @@
     "saves": null,
     "shares": null,
     "last_checked": null
+  },
+  {
+    "id": "20260423_010201",
+    "posted_at": "2026-04-23T01:02:01.493784",
+    "content_type": "card",
+    "text": "好きな人の前でだけ、ドジになる。不思議すぎる。",
+    "text_hash": "49349dad4dc874ee5b464527a380d0de",
+    "category": "恋愛あるある",
+    "tone": "共感型",
+    "format": "問いかけ",
+    "card_style": "xdark",
+    "posting_hour": 1,
+    "text_length": 23,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "saves": null,
+    "shares": null,
+    "last_checked": null
   }
 ]
