@@ -948,5 +948,25 @@
     "saves": 0,
     "shares": 0,
     "last_checked": "2026-04-23T04:57:40.173707"
+  },
+  {
+    "id": "20260423_145942",
+    "posted_at": "2026-04-23T14:59:42.656813",
+    "content_type": "card",
+    "text": "新しい人を好きになるたびに、比べてしまう。ごめんなさい。",
+    "text_hash": "b2e649a64df68ee5c84e0c3652225404",
+    "category": "元カレ元カノ",
+    "tone": "共感型",
+    "format": "ストーリー",
+    "card_style": "xdark",
+    "posting_hour": 14,
+    "text_length": 28,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "saves": null,
+    "shares": null,
+    "last_checked": null
   }
 ]
