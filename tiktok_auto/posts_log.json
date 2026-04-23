@@ -1048,5 +1048,25 @@
     "saves": null,
     "shares": null,
     "last_checked": null
+  },
+  {
+    "id": "20260424_030719",
+    "posted_at": "2026-04-24T03:07:19.262680",
+    "content_type": "card",
+    "text": "眠れない夜は、考えたくないことばかり考えてしまう。",
+    "text_hash": "69de1a59292059a966d3f345802bdfb8",
+    "category": "寂しい夜",
+    "tone": "共感型",
+    "format": "問いかけ",
+    "card_style": "xdark",
+    "posting_hour": 3,
+    "text_length": 25,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "saves": null,
+    "shares": null,
+    "last_checked": null
   }
 ]
