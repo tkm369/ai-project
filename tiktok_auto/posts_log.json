@@ -1068,5 +1068,25 @@
     "saves": 0,
     "shares": 0,
     "last_checked": "2026-04-24T05:05:23.970550"
+  },
+  {
+    "id": "20260424_091341",
+    "posted_at": "2026-04-24T09:13:41.970083",
+    "content_type": "card",
+    "text": "SNSのストーリーを見てしまう。元気そうで、よかったと思いつつ、複雑だった。",
+    "text_hash": "46b0619afb872e8f3d7e3db3dbd96620",
+    "category": "復縁",
+    "tone": "共感型",
+    "format": "問いかけ",
+    "card_style": "xdark",
+    "posting_hour": 9,
+    "text_length": 38,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "saves": null,
+    "shares": null,
+    "last_checked": null
   }
 ]
