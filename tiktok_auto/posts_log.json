@@ -1288,5 +1288,25 @@
     "saves": null,
     "shares": null,
     "last_checked": null
+  },
+  {
+    "id": "20260426_010234",
+    "posted_at": "2026-04-26T01:02:34.618142",
+    "content_type": "card",
+    "text": "連絡しようとして、やめて、また考えての繰り返しをもう何日してるんだろう。",
+    "text_hash": "361b1e04673666e5a8329de629d4f4f0",
+    "category": "復縁",
+    "tone": "共感型",
+    "format": "独白",
+    "card_style": "xdark",
+    "posting_hour": 1,
+    "text_length": 36,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "saves": null,
+    "shares": null,
+    "last_checked": null
   }
 ]
