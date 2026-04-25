@@ -1208,5 +1208,25 @@
     "saves": null,
     "shares": null,
     "last_checked": null
+  },
+  {
+    "id": "20260425_160104",
+    "posted_at": "2026-04-25T16:01:04.218123",
+    "content_type": "card",
+    "text": "「縁がなかった」って言葉が、少しずつ受け入れられるようになってきた。",
+    "text_hash": "988e378de8645d14f80e94c0f15b42da",
+    "category": "恋愛名言",
+    "tone": "共感型",
+    "format": "独白",
+    "card_style": "xdark",
+    "posting_hour": 16,
+    "text_length": 34,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "saves": null,
+    "shares": null,
+    "last_checked": null
   }
 ]
