@@ -1228,5 +1228,25 @@
     "saves": null,
     "shares": null,
     "last_checked": null
+  },
+  {
+    "id": "20260425_174027",
+    "posted_at": "2026-04-25T17:40:27.703263",
+    "content_type": "card",
+    "text": "また会えたとして、何を話せばいいのかわからない。でも会いたい。",
+    "text_hash": "b06829d4088e5a5016b3101e04fdb007",
+    "category": "復縁",
+    "tone": "共感型",
+    "format": "独白",
+    "card_style": "xdark",
+    "posting_hour": 17,
+    "text_length": 31,
+    "video_duration": 16.0,
+    "views": null,
+    "likes": null,
+    "comments": null,
+    "saves": null,
+    "shares": null,
+    "last_checked": null
   }
 ]
